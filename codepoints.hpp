@@ -1,5 +1,5 @@
-#ifndef CODEPOINTS
-#define CODEPOINTS
+#ifndef CODEPOINTS_HEADER
+#define CODEPOINTS_HEADER
 
 // The highlighter processes all text as sequences of codepoints, effectively
 // working in UCS-4/UTF-32 (the differences between the two not being relevant
