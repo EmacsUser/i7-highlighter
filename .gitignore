@@ -1,3 +1,9 @@
+# Emacs backups
+*~
+
+# The external program
+i7-highlighter
+
 # Compiled Object files
 *.slo
 *.lo
