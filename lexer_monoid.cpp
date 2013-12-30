@@ -316,7 +316,7 @@ ostream&operator <<(ostream&out, const lexer_monoid&element) {
   return out << "redepth by " << static_cast<int>(element.comment_depth_change) << " }";
 }
 
-const lexical_state INITIAL_LEXICAL_STATE = {I7}
+const lexical_state INITIAL_LEXICAL_STATE = {I7};
 
 lexer_monoid plain_text =
   lexer_monoid{0};
