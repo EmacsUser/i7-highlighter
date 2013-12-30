@@ -9,7 +9,7 @@ using namespace std;
 
 // If W is an index among all superstates that can take I7 comment levels,
 // commentable_superstate_map[W] gives the corresponding superstate.
-const lexical_superstate commentable_superstate_map[COUNT_OF_LEXICAL_SUPERSTATES_WITH_I7_COMMENT_LEVELS] = {
+static const lexical_superstate commentable_superstate_map[COUNT_OF_LEXICAL_SUPERSTATES_WITH_I7_COMMENT_LEVELS] = {
   I7,
   I7_EXTENSION_DOCUMENTATION,
   I7_IN_I6,
@@ -26,7 +26,7 @@ const lexical_superstate commentable_superstate_map[COUNT_OF_LEXICAL_SUPERSTATES
 // If X is a lexical_superstate that can take I7 comment levels,
 // commentable_index_map[X] gives its index among all such superstates.
 // Otherwise, it gives INVALID_INDEX.
-const unsigned commentable_index_map[LEXICAL_SUPERSTATE_COUNT] = {
+static const unsigned commentable_index_map[LEXICAL_SUPERSTATE_COUNT] = {
   0, INVALID_INDEX, INVALID_INDEX, 1,
   INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
   INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
@@ -47,13 +47,12 @@ const unsigned commentable_index_map[LEXICAL_SUPERSTATE_COUNT] = {
   I7_IN_I6_COMMENT_IN_ROUTINE, \
   I7_IN_I6_COMMENT_IN_EXTRACT, \
   I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT
-const lexical_superstate movable_commentable_superstate_map[COUNT_OF_LEXICAL_SUPERSTATES_WITH_MOVABLE_I7_COMMENT_LEVELS] = {
-};
+static const lexical_superstate movable_commentable_superstate_map[COUNT_OF_LEXICAL_SUPERSTATES_WITH_MOVABLE_I7_COMMENT_LEVELS] = { MOVABLE_COMMENTABLE_LEXICAL_SUPERSTATE_LIST };
 
 // If X is a lexical_superstate that can take movable I7 comment levels,
 // movable_commentable_index_map[X] gives its index among all such superstates.
 // Otherwise, it gives INVALID_INDEX.
-const unsigned movable_commentable_index_map[LEXICAL_SUPERSTATE_COUNT] = {
+static const unsigned movable_commentable_index_map[LEXICAL_SUPERSTATE_COUNT] = {
   INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, 1,
   INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
   INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
@@ -317,8 +316,11 @@ ostream&operator <<(ostream&out, const lexer_monoid&element) {
   return out << "redepth by " << static_cast<int>(element.comment_depth_change) << " }";
 }
 
+const lexical_state INITIAL_LEXICAL_STATE = {I7}
+
 lexer_monoid plain_text =
   lexer_monoid{0};
+
 lexer_monoid double_quote =
   lexer_monoid{I7, I7_STRING, true} +
   lexer_monoid{I7_SUBSTITUTION, I7} +
@@ -344,6 +346,7 @@ lexer_monoid double_quote =
   lexer_monoid{I7_SUBSTITUTION_IN_I6_IN_ROUTINE_IN_EXTRACT, I7_IN_I6_IN_ROUTINE_IN_EXTRACT} +
   lexer_monoid{I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, true} +
   lexer_monoid{I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT};
+
 lexer_monoid left_bracket =
   lexer_monoid{I7_STRING, I7_SUBSTITUTION} +
   lexer_monoid{I6, I6_IN_ROUTINE} +
@@ -358,6 +361,7 @@ lexer_monoid left_bracket =
   lexer_monoid{I7_STRING_IN_I6_IN_ROUTINE_IN_EXTRACT, I7_SUBSTITUTION_IN_I6_IN_ROUTINE_IN_EXTRACT} +
   lexer_monoid{I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT} +
   lexer_monoid{1};
+
 lexer_monoid right_bracket =
   lexer_monoid{I7_SUBSTITUTION, I7_STRING} +
   lexer_monoid{I6_IN_ROUTINE, I6} +
@@ -372,10 +376,13 @@ lexer_monoid right_bracket =
   lexer_monoid{I7_SUBSTITUTION_IN_I6_IN_ROUTINE_IN_EXTRACT, I7_STRING_IN_I6_IN_ROUTINE_IN_EXTRACT} +
   lexer_monoid{I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT} +
   lexer_monoid{-1};
+
 lexer_monoid documentation_break =
   lexer_monoid{I7, I7_EXTENSION_DOCUMENTATION};
+
 lexer_monoid documentation_break_followed_by_indentation =
   lexer_monoid{I7, I7_IN_EXTRACT};
+
 lexer_monoid indentation =
   lexer_monoid{I7_EXTENSION_DOCUMENTATION, I7_IN_EXTRACT} +
   lexer_monoid{I6_COMMENT, I6} +
@@ -394,6 +401,7 @@ lexer_monoid indentation =
   lexer_monoid{I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_IN_I6_IN_ROUTINE_IN_EXTRACT, false, true} +
   lexer_monoid{I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_STRING_IN_I6_IN_ROUTINE_IN_EXTRACT, false, true} +
   lexer_monoid{I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_SUBSTITUTION_IN_I6_IN_ROUTINE_IN_EXTRACT, false, true};
+
 lexer_monoid bare_newline =
   lexer_monoid{I6_COMMENT, I6} +
   lexer_monoid{I6_COMMENT_IN_ROUTINE, I6_IN_ROUTINE} +
@@ -426,9 +434,11 @@ lexer_monoid bare_newline =
   lexer_monoid{I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_EXTENSION_DOCUMENTATION} +
   lexer_monoid{I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_EXTENSION_DOCUMENTATION} +
   lexer_monoid{I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_EXTENSION_DOCUMENTATION};
+
 lexer_monoid left_cyclops =
   lexer_monoid{I7, I6} +
   lexer_monoid{I7_IN_EXTRACT, I6_IN_EXTRACT};
+
 lexer_monoid right_cyclops =
   lexer_monoid{I6, I7} +
   lexer_monoid{I6_CHARACTER, I7} +
@@ -470,21 +480,25 @@ lexer_monoid right_cyclops =
   lexer_monoid{I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_IN_EXTRACT} +
   lexer_monoid{I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_IN_EXTRACT} +
   lexer_monoid{I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_IN_EXTRACT};
+
 lexer_monoid single_quote =
   lexer_monoid{I6, I6_CHARACTER, true} +
   lexer_monoid{I6_IN_ROUTINE, I6_CHARACTER_IN_ROUTINE, true} +
   lexer_monoid{I6_IN_EXTRACT, I6_CHARACTER_IN_EXTRACT, true} +
   lexer_monoid{I6_IN_ROUTINE_IN_EXTRACT, I6_CHARACTER_IN_ROUTINE_IN_EXTRACT, true};
+
 lexer_monoid bang =
   lexer_monoid{I6, I6_COMMENT} +
   lexer_monoid{I6_IN_ROUTINE, I6_COMMENT_IN_ROUTINE} +
   lexer_monoid{I6_IN_EXTRACT, I6_COMMENT_IN_EXTRACT} +
   lexer_monoid{I6_IN_ROUTINE_IN_EXTRACT, I6_COMMENT_IN_ROUTINE_IN_EXTRACT};
+
 lexer_monoid left_crosseyed_cyclops =
   lexer_monoid{I6, I7_IN_I6} +
   lexer_monoid{I6_IN_ROUTINE, I7_IN_I6_IN_ROUTINE} +
   lexer_monoid{I6_IN_EXTRACT, I7_IN_I6_IN_EXTRACT} +
   lexer_monoid{I6_IN_ROUTINE_IN_EXTRACT, I7_IN_I6_IN_ROUTINE_IN_EXTRACT};
+
 lexer_monoid right_crosseyed_cyclops =
   lexer_monoid{I7_IN_I6, I6} +
   lexer_monoid{I7_STRING_IN_I6, I6} +

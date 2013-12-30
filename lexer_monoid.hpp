@@ -161,6 +161,8 @@ public:
 
 std::ostream&operator <<(std::ostream&out, const lexer_monoid&element);
 
+extern const lexical_state INITIAL_LEXICAL_STATE;
+
 extern lexer_monoid plain_text;			/* (anything not appearing below) */
 extern lexer_monoid double_quote;		/* " */
 extern lexer_monoid left_bracket;		/* [ */
