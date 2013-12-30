@@ -349,7 +349,7 @@ protected:
     typename monoid_sequence::iterator insert_before(const T&difference, monoid_sequence&sequence) {
       assert(is_leaf());
       vertex*result = new vertex{difference};
-      new vertex{result, this, this, sequence->root};
+      new vertex{result, this, this, sequence.root};
       return {&sequence, result};
     }
 
@@ -359,7 +359,7 @@ protected:
     typename monoid_sequence::iterator insert_after(const T&difference, monoid_sequence&sequence) {
       assert(is_leaf());
       vertex*result = new vertex{difference};
-      new vertex{this, result, this, sequence->root};
+      new vertex{this, result, this, sequence.root};
       return {&sequence, result};
     }
 
@@ -494,12 +494,12 @@ public:
   iterator insert(const iterator&position, const T&difference) {
     assert(position.sequence == this);
     if (position.position) {
-      iterator result = position.position->insert_before(difference, this);
+      iterator result = position.position->insert_before(difference, *this);
       for (vertex*parent; parent = root->get_parent(); root = parent);
       return result;
     }
     if (root) {
-      iterator result = root->get_rightmost_descendant()->insert_after(difference, this);
+      iterator result = root->get_rightmost_descendant()->insert_after(difference, *this);
       for (vertex*parent; parent = root->get_parent(); root = parent);
       return result;
     }
@@ -511,7 +511,7 @@ public:
     assert(position.position);
     iterator result = position;
     ++result;
-    position.position->remove(root);
+    position.position->remove(*this);
     if (position.position == root) {
       assert(!result.position);
       root = nullptr;
