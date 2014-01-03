@@ -167,6 +167,34 @@ protected:
       return const_cast<vertex*>(ancestor);
     }
 
+    bool operator <(const vertex&other) const {
+      if (&other == this) {
+	return false;
+      }
+      bool result;
+      const vertex*ancestor = this;
+      unsigned ancestor_depth = get_depth();
+      const vertex*other_ancestor = other;
+      unsigned other_ancestor_depth = other->get_depth();
+      for(; ancestor_depth > other_ancestor_depth; --ancestor_depth) {
+	vertex*new_ancestor = ancestor->parent;
+	result = (ancestor == new_ancestor->left);
+	ancestor = new_ancestor;
+      }
+      for(; other_ancestor_depth > ancestor_depth; --other_ancestor_depth) {
+	vertex*new_other_ancestor = other_ancestor->parent;
+	result = (other_ancestor == new_other_ancestor->right);
+	other_ancestor = new_other_ancestor;
+      }
+      while (ancestor != other_ancestor) {
+	vertex*new_ancestor = ancestor->parent;
+	result = (ancestor == new_ancestor->left);
+	ancestor = new_ancestor;
+	other_ancestor = other_ancestor->parent;
+      }
+      return result;
+    }
+
     void recompute_ancestor_differences_and_subtree_sizes() {
       for (vertex*below = this, *above = parent; above; below = above, above = above->parent) {
 	if (below == above->left) {
@@ -417,6 +445,10 @@ public:
       return &(position->get_difference());
     }
 
+    // const monoid_sequence*get_owner() const {
+    //   return sequence;
+    // }
+
     bool can_decrement() const {
       return position->get_previous();
     }
@@ -458,6 +490,15 @@ public:
     }
     bool operator !=(const iterator&other) const {
       return !(*this == other);
+    }
+    bool operator <(const iterator&other) const {
+      if (position) {
+	if (other.position) {
+	  return *position < *other.position;
+	}
+	return true;
+      }
+      return false;
     }
   };
 
