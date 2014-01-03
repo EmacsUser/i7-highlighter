@@ -194,10 +194,9 @@ lexer_monoid::lexer_monoid(int8_t comment_depth_change) :
   }
 }
 
-lexer_monoid::lexer_monoid(lexical_superstate from, lexical_superstate to, bool also_in_reverse, bool even_in_I7_comments) :
+lexer_monoid::lexer_monoid(lexical_superstate from, lexical_superstate to, bool also_in_reverse) :
   images{LEXICAL_SUPERSTATE_LIST},
   comment_depth_change{0} {
-  assert(!also_in_reverse || !even_in_I7_comments);
   images[from] = to;
   if (also_in_reverse) {
     images[to] = from;
