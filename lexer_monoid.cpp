@@ -39,32 +39,6 @@ static const unsigned commentable_index_map[LEXICAL_SUPERSTATE_COUNT] = {
   9, INVALID_INDEX, INVALID_INDEX, 10, INVALID_INDEX, INVALID_INDEX
 };
 
-// If W is an index among all superstates that can take movable I7 comment
-// levels, movable_commentable_superstate_map[W] gives the corresponding
-// superstate.  The macro is for the benefit of the constructors below.
-#define MOVABLE_COMMENTABLE_LEXICAL_SUPERSTATE_LIST \
-  I7_IN_I6_COMMENT, \
-  I7_IN_I6_COMMENT_IN_ROUTINE, \
-  I7_IN_I6_COMMENT_IN_EXTRACT, \
-  I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT
-static const lexical_superstate movable_commentable_superstate_map[COUNT_OF_LEXICAL_SUPERSTATES_WITH_MOVABLE_I7_COMMENT_LEVELS] = { MOVABLE_COMMENTABLE_LEXICAL_SUPERSTATE_LIST };
-
-// If X is a lexical_superstate that can take movable I7 comment levels,
-// movable_commentable_index_map[X] gives its index among all such superstates.
-// Otherwise, it gives INVALID_INDEX.
-static const unsigned movable_commentable_index_map[LEXICAL_SUPERSTATE_COUNT] = {
-  INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, 1,
-  INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
-  INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
-  INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, 0, INVALID_INDEX, INVALID_INDEX,
-  INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, 1, INVALID_INDEX, INVALID_INDEX,
-  INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
-  INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
-  INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
-  INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, 2, INVALID_INDEX, INVALID_INDEX,
-  INVALID_INDEX, INVALID_INDEX, INVALID_INDEX, 3, INVALID_INDEX, INVALID_INDEX
-};
-
 ostream&operator <<(ostream&out, lexical_superstate superstate) {
   switch (superstate) {
   case I7:
@@ -211,7 +185,6 @@ void lexer_monoid::compose(vector<lexical_state>&composition_comment_images, lex
 
 lexer_monoid::lexer_monoid(int8_t comment_depth_change) :
   images{LEXICAL_SUPERSTATE_LIST},
-  deep_images{MOVABLE_COMMENTABLE_LEXICAL_SUPERSTATE_LIST},
   comment_depth_change{comment_depth_change} {
   assert (comment_depth_change == -1 || comment_depth_change == 0 || comment_depth_change == 1);
   if (comment_depth_change == 1) {
@@ -223,20 +196,16 @@ lexer_monoid::lexer_monoid(int8_t comment_depth_change) :
 
 lexer_monoid::lexer_monoid(lexical_superstate from, lexical_superstate to, bool also_in_reverse, bool even_in_I7_comments) :
   images{LEXICAL_SUPERSTATE_LIST},
-  deep_images{MOVABLE_COMMENTABLE_LEXICAL_SUPERSTATE_LIST},
   comment_depth_change{0} {
   assert(!also_in_reverse || !even_in_I7_comments);
   images[from] = to;
   if (also_in_reverse) {
     images[to] = from;
-  } else if (even_in_I7_comments) {
-    deep_images[movable_commentable_index_map[from]] = to;
   }
 }
 
 lexer_monoid::lexer_monoid(const lexer_monoid&copy) :
   images{copy.images[0], copy.images[1], copy.images[2], copy.images[3], copy.images[4], copy.images[5], copy.images[6], copy.images[7], copy.images[8], copy.images[9], copy.images[10], copy.images[11], copy.images[12], copy.images[13], copy.images[14], copy.images[15], copy.images[16], copy.images[17], copy.images[18], copy.images[19], copy.images[20], copy.images[21], copy.images[22], copy.images[23], copy.images[24], copy.images[25], copy.images[26], copy.images[27], copy.images[28], copy.images[29], copy.images[30], copy.images[31], copy.images[32], copy.images[33], copy.images[34], copy.images[35], copy.images[36], copy.images[37], copy.images[38], copy.images[39], copy.images[40], copy.images[41], copy.images[42], copy.images[43], copy.images[44], copy.images[45], copy.images[46]},
-  deep_images{copy.deep_images[0], copy.deep_images[1], copy.deep_images[2], copy.deep_images[3]},
   comment_depth_change{copy.comment_depth_change} {
   for (unsigned i = COUNT_OF_LEXICAL_SUPERSTATES_WITH_I7_COMMENT_LEVELS; i--;) {
     comment_images[i] = copy.comment_images[i];
@@ -262,10 +231,6 @@ lexical_state lexer_monoid::operator ()(lexical_state state) const {
   if (comment_depth <= comment_images_for_superstate.size()) {
     return comment_images_for_superstate[comment_depth - 1];
   }
-  unsigned movable_commentable_index = movable_commentable_index_map[superstate];
-  if (movable_commentable_index != INVALID_INDEX) {
-    return {deep_images[movable_commentable_index], comment_depth + comment_depth_change};
-  }
   return {superstate, comment_depth + comment_depth_change};
 }
 
@@ -277,12 +242,7 @@ lexer_monoid lexer_monoid::operator +(const lexer_monoid&other) const {
   result.comment_depth_change = comment_depth_change + other.comment_depth_change;
   for (unsigned i = COUNT_OF_LEXICAL_SUPERSTATES_WITH_I7_COMMENT_LEVELS; i--;) {
     lexical_superstate superstate = commentable_superstate_map[i];
-    unsigned movable_commentable_index = movable_commentable_index_map[superstate];
-    unsigned other_comment_images_index = (movable_commentable_index == INVALID_INDEX) ? i : commentable_superstate_map[deep_images[movable_commentable_index]];
-    compose(result.comment_images[i], superstate, comment_images[i], other, other.comment_images[other_comment_images_index]);
-  }
-  for (unsigned i = COUNT_OF_LEXICAL_SUPERSTATES_WITH_MOVABLE_I7_COMMENT_LEVELS; i--;) {
-    result.deep_images[i] = (deep_images[i] == movable_commentable_superstate_map[i]) ? other.deep_images[i] : deep_images[i];
+    compose(result.comment_images[i], superstate, comment_images[i], other, other.comment_images[i]);
   }
   return result;
 }
@@ -306,11 +266,6 @@ ostream&operator <<(ostream&out, const lexer_monoid&element) {
       if (preimage != postimage) {
 	out << preimage << " to " << postimage << ", ";
       }
-    }
-  }
-  for (unsigned i = COUNT_OF_LEXICAL_SUPERSTATES_WITH_MOVABLE_I7_COMMENT_LEVELS; i--;) {
-    if (element.deep_images[i] != movable_commentable_superstate_map[i]) {
-      out << movable_commentable_superstate_map[i] << "+N to " << element.deep_images[i] << "+N, ";
     }
   }
   return out << "redepth by " << static_cast<int>(element.comment_depth_change) << " }";

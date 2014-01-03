@@ -133,10 +133,6 @@ protected:
   // The comment_depth_change tells how much the element will change a
   // lexical_state's comment depth provided that the depth starts high enough.
   int8_t				comment_depth_change;
-  // The deep images array maps each superstate with movable comment levels to
-  // the superstate that it moves to, again provided that the comment depth
-  // starts high enough.
-  lexical_superstate			deep_images[COUNT_OF_LEXICAL_SUPERSTATES_WITH_MOVABLE_I7_COMMENT_LEVELS];
   // The comment_images vectors describe what lexical_states are reached from
   // lower comment depths.  The array is indexed by occurrence numbers among the
   // superstates that can take comments, while the vectors are indexed by
@@ -149,7 +145,7 @@ protected:
 
 public:
   lexer_monoid(int8_t comment_depth_change);
-  lexer_monoid(lexical_superstate from, lexical_superstate to, bool also_in_reverse = false, bool even_in_I7_comments = false);
+  lexer_monoid(lexical_superstate from, lexical_superstate to, bool also_in_reverse = false);
   lexer_monoid(const lexer_monoid&copy);
   lexer_monoid&operator =(const lexer_monoid&other);
   lexical_state operator ()(lexical_state state) const;
