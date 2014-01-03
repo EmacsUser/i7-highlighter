@@ -1,28 +1,34 @@
 #include "protocol.hpp"
 #include "lexical_highlights.hpp"
 
-enum lexical_supersuperstate {
-  I7_IN_CONTEXT,
-  I6_IN_CONTEXT,
-  I7_COMMENT_IN_CONTEXT,
-  I6_COMMENT_IN_CONTEXT,
-  DOCUMENTATION_IN_CONTEXT,
-  CHARACTER_IN_CONTEXT,
-  STRING_IN_CONTEXT,
-  SUBSTITUTION_IN_CONTEXT
-};
+namespace {
+  enum lexical_supersuperstate {
+    I7_IN_CONTEXT,
+    I6_IN_CONTEXT,
+    I7_COMMENT_IN_CONTEXT,
+    I6_COMMENT_IN_CONTEXT,
+    DOCUMENTATION_IN_CONTEXT,
+    CHARACTER_IN_CONTEXT,
+    STRING_IN_CONTEXT,
+    SUBSTITUTION_IN_CONTEXT
+  };
+}
 
-lexical_supersuperstate supersuperstate_of(lexical_state state) {
+static lexical_supersuperstate supersuperstate_of(lexical_state state) {
   if (state.get_comment_depth()) {
     return I7_COMMENT_IN_CONTEXT;
   }
   switch (state.get_superstate()) {
   case I7:
   case I7_IN_I6:
+  case I7_IN_I6_COMMENT:
   case I7_IN_EXTRACT:
   case I7_IN_I6_IN_ROUTINE:
+  case I7_IN_I6_COMMENT_IN_ROUTINE:
   case I7_IN_I6_IN_EXTRACT:
+  case I7_IN_I6_COMMENT_IN_EXTRACT:
   case I7_IN_I6_IN_ROUTINE_IN_EXTRACT:
+  case I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT:
     return I7_IN_CONTEXT;
   case I6:
   case I6_IN_ROUTINE:
@@ -45,29 +51,39 @@ lexical_supersuperstate supersuperstate_of(lexical_state state) {
   case I6_STRING:
   case I6_STRING_IN_ROUTINE:
   case I7_STRING_IN_I6:
+  case I7_STRING_IN_I6_COMMENT:
   case I7_STRING_IN_I6_IN_ROUTINE:
+  case I7_STRING_IN_I6_COMMENT_IN_ROUTINE:
   case I7_STRING_IN_EXTRACT:
   case I6_STRING_IN_EXTRACT:
   case I6_STRING_IN_ROUTINE_IN_EXTRACT:
   case I7_STRING_IN_I6_IN_EXTRACT:
+  case I7_STRING_IN_I6_COMMENT_IN_EXTRACT:
   case I7_STRING_IN_I6_IN_ROUTINE_IN_EXTRACT:
+  case I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT:
     return STRING_IN_CONTEXT;
   case I7_SUBSTITUTION:
   case I7_SUBSTITUTION_IN_I6:
+  case I7_SUBSTITUTION_IN_I6_COMMENT:
   case I7_SUBSTITUTION_IN_I6_IN_ROUTINE:
+  case I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE:
   case I7_SUBSTITUTION_IN_EXTRACT:
   case I7_SUBSTITUTION_IN_I6_IN_EXTRACT:
+  case I7_SUBSTITUTION_IN_I6_COMMENT_IN_EXTRACT:
   case I7_SUBSTITUTION_IN_I6_IN_ROUTINE_IN_EXTRACT:
+  case I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT:
     return SUBSTITUTION_IN_CONTEXT;
   }
   return I7_IN_CONTEXT;
 }
 
-bool is_extract_state(lexical_state state) {
+static bool is_extract_state(lexical_state state) {
   switch (state.get_superstate()) {
   case I7_IN_EXTRACT:
   case I7_IN_I6_IN_EXTRACT:
+  case I7_IN_I6_COMMENT_IN_EXTRACT:
   case I7_IN_I6_IN_ROUTINE_IN_EXTRACT:
+  case I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT:
   case I6_IN_EXTRACT:
   case I6_IN_ROUTINE_IN_EXTRACT:
   case I6_COMMENT_IN_EXTRACT:
@@ -78,29 +94,45 @@ bool is_extract_state(lexical_state state) {
   case I6_STRING_IN_EXTRACT:
   case I6_STRING_IN_ROUTINE_IN_EXTRACT:
   case I7_STRING_IN_I6_IN_EXTRACT:
+  case I7_STRING_IN_I6_COMMENT_IN_EXTRACT:
   case I7_STRING_IN_I6_IN_ROUTINE_IN_EXTRACT:
+  case I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT:
   case I7_SUBSTITUTION_IN_EXTRACT:
   case I7_SUBSTITUTION_IN_I6_IN_EXTRACT:
+  case I7_SUBSTITUTION_IN_I6_COMMENT_IN_EXTRACT:
   case I7_SUBSTITUTION_IN_I6_IN_ROUTINE_IN_EXTRACT:
+  case I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT:
     return true;
   }
   return false;
 }
 
-bool is_self_nested(lexical_state state) {
+static bool is_self_nested(lexical_state state) {
   switch (state.get_superstate()) {
   case I7_IN_I6:
+  case I7_IN_I6_COMMENT:
   case I7_IN_I6_IN_ROUTINE:
+  case I7_IN_I6_COMMENT_IN_ROUTINE:
   case I7_IN_I6_IN_EXTRACT:
+  case I7_IN_I6_COMMENT_IN_EXTRACT:
   case I7_IN_I6_IN_ROUTINE_IN_EXTRACT:
+  case I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT:
   case I7_STRING_IN_I6:
+  case I7_STRING_IN_I6_COMMENT:
   case I7_STRING_IN_I6_IN_ROUTINE:
+  case I7_STRING_IN_I6_COMMENT_IN_ROUTINE:
   case I7_STRING_IN_I6_IN_EXTRACT:
+  case I7_STRING_IN_I6_COMMENT_IN_EXTRACT:
   case I7_STRING_IN_I6_IN_ROUTINE_IN_EXTRACT:
+  case I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT:
   case I7_SUBSTITUTION_IN_I6:
+  case I7_SUBSTITUTION_IN_I6_COMMENT:
   case I7_SUBSTITUTION_IN_I6_IN_ROUTINE:
+  case I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE:
   case I7_SUBSTITUTION_IN_I6_IN_EXTRACT:
+  case I7_SUBSTITUTION_IN_I6_COMMENT_IN_EXTRACT:
   case I7_SUBSTITUTION_IN_I6_IN_ROUTINE_IN_EXTRACT:
+  case I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT:
     return true;
   }
   return false;
