@@ -48,7 +48,7 @@ protected:
    */
   virtual std::vector<fact>get_immediate_consequences() const = 0;
 public:
-  fact(::context&context) : context{context} {}
+  fact(::context&context) : context(context) {}
   virtual ~fact() {}
   /* The bool operator determines whether a fact is true or false. */
   virtual operator bool() const = 0;
