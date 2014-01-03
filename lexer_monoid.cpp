@@ -273,10 +273,10 @@ ostream&operator <<(ostream&out, const lexer_monoid&element) {
 
 const lexical_state INITIAL_LEXICAL_STATE = {I7};
 
-lexer_monoid plain_text =
+const lexer_monoid plain_text =
   lexer_monoid{0};
 
-lexer_monoid double_quote =
+const lexer_monoid double_quote =
   lexer_monoid{I7, I7_STRING, true} +
   lexer_monoid{I7_SUBSTITUTION, I7} +
   lexer_monoid{I6, I6_STRING, true} +
@@ -302,7 +302,7 @@ lexer_monoid double_quote =
   lexer_monoid{I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, true} +
   lexer_monoid{I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT};
 
-lexer_monoid left_bracket =
+const lexer_monoid left_bracket =
   lexer_monoid{I7_STRING, I7_SUBSTITUTION} +
   lexer_monoid{I6, I6_IN_ROUTINE} +
   lexer_monoid{I7_STRING_IN_I6, I7_SUBSTITUTION_IN_I6} +
@@ -317,7 +317,7 @@ lexer_monoid left_bracket =
   lexer_monoid{I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT} +
   lexer_monoid{1};
 
-lexer_monoid right_bracket =
+const lexer_monoid right_bracket =
   lexer_monoid{I7_SUBSTITUTION, I7_STRING} +
   lexer_monoid{I6_IN_ROUTINE, I6} +
   lexer_monoid{I7_SUBSTITUTION_IN_I6, I7_STRING_IN_I6} +
@@ -332,20 +332,20 @@ lexer_monoid right_bracket =
   lexer_monoid{I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT} +
   lexer_monoid{-1};
 
-lexer_monoid documentation_break =
+const lexer_monoid documentation_break =
   lexer_monoid{I7, I7_EXTENSION_DOCUMENTATION};
 
-lexer_monoid documentation_break_followed_by_indentation =
+const lexer_monoid documentation_break_followed_by_indentation =
   lexer_monoid{I7, I7_IN_EXTRACT};
 
-lexer_monoid indentation =
+const lexer_monoid indentation =
   lexer_monoid{I7_EXTENSION_DOCUMENTATION, I7_IN_EXTRACT} +
   lexer_monoid{I6_COMMENT, I6} +
   lexer_monoid{I6_COMMENT_IN_ROUTINE, I6_IN_ROUTINE} +
   lexer_monoid{I6_COMMENT_IN_EXTRACT, I6_IN_EXTRACT} +
   lexer_monoid{I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I6_IN_ROUTINE_IN_EXTRACT};
 
-lexer_monoid bare_newline =
+const lexer_monoid bare_newline =
   lexer_monoid{I6_COMMENT, I6} +
   lexer_monoid{I6_COMMENT_IN_ROUTINE, I6_IN_ROUTINE} +
   lexer_monoid{I7_IN_EXTRACT, I7_EXTENSION_DOCUMENTATION} +
@@ -372,11 +372,11 @@ lexer_monoid bare_newline =
   lexer_monoid{I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_EXTENSION_DOCUMENTATION} +
   lexer_monoid{I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_EXTENSION_DOCUMENTATION};
 
-lexer_monoid left_cyclops =
+const lexer_monoid left_cyclops =
   lexer_monoid{I7, I6} +
   lexer_monoid{I7_IN_EXTRACT, I6_IN_EXTRACT};
 
-lexer_monoid right_cyclops =
+const lexer_monoid right_cyclops =
   lexer_monoid{I6, I7} +
   lexer_monoid{I6_CHARACTER, I7} +
   lexer_monoid{I6_STRING, I7} +
@@ -418,25 +418,25 @@ lexer_monoid right_cyclops =
   lexer_monoid{I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_IN_EXTRACT} +
   lexer_monoid{I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_IN_EXTRACT};
 
-lexer_monoid single_quote =
+const lexer_monoid single_quote =
   lexer_monoid{I6, I6_CHARACTER, true} +
   lexer_monoid{I6_IN_ROUTINE, I6_CHARACTER_IN_ROUTINE, true} +
   lexer_monoid{I6_IN_EXTRACT, I6_CHARACTER_IN_EXTRACT, true} +
   lexer_monoid{I6_IN_ROUTINE_IN_EXTRACT, I6_CHARACTER_IN_ROUTINE_IN_EXTRACT, true};
 
-lexer_monoid bang =
+const lexer_monoid bang =
   lexer_monoid{I6, I6_COMMENT} +
   lexer_monoid{I6_IN_ROUTINE, I6_COMMENT_IN_ROUTINE} +
   lexer_monoid{I6_IN_EXTRACT, I6_COMMENT_IN_EXTRACT} +
   lexer_monoid{I6_IN_ROUTINE_IN_EXTRACT, I6_COMMENT_IN_ROUTINE_IN_EXTRACT};
 
-lexer_monoid left_crosseyed_cyclops =
+const lexer_monoid left_crosseyed_cyclops =
   lexer_monoid{I6, I7_IN_I6} +
   lexer_monoid{I6_IN_ROUTINE, I7_IN_I6_IN_ROUTINE} +
   lexer_monoid{I6_IN_EXTRACT, I7_IN_I6_IN_EXTRACT} +
   lexer_monoid{I6_IN_ROUTINE_IN_EXTRACT, I7_IN_I6_IN_ROUTINE_IN_EXTRACT};
 
-lexer_monoid right_crosseyed_cyclops =
+const lexer_monoid right_crosseyed_cyclops =
   lexer_monoid{I7_IN_I6, I6} +
   lexer_monoid{I7_STRING_IN_I6, I6} +
   lexer_monoid{I7_SUBSTITUTION_IN_I6, I6} +
