@@ -23,9 +23,9 @@ public:
   stack_monoid(unsigned zero) { assert(!zero); }
   stack_monoid(const T&symbol, bool is_pop) {
     if (is_pop) {
-      pops.push_back(left_delimiter);
+      pops.push_back(symbol);
     } else {
-      pushes.push_back(left_delimiter);
+      pushes.push_back(symbol);
     }
   }
 
