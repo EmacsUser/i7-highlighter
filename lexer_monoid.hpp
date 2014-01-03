@@ -15,9 +15,7 @@
  * We define them with a macro for the sake of initializers in lexer_monoid.cpp.
  *
  * In the following constant names, ``extract'' means any code embedded in
- * documentation, whether pastable or not, part of an example or not.  ``Movable
- * comment levels'' are comment levels that may be preserved across a superstate
- * change.
+ * documentation, whether pastable or not, part of an example or not.
  */
 
 #define LEXICAL_SUPERSTATE_LIST \
@@ -40,14 +38,14 @@
   I7_IN_I6, /* can take I7 comment levels (occurrence 2) */ \
   I7_STRING_IN_I6, \
   I7_SUBSTITUTION_IN_I6, \
-  I7_IN_I6_COMMENT, /* can take movable I7 comment levels (occurrences 3 and 0) */ \
+  I7_IN_I6_COMMENT, /* can take I7 comment levels (occurrences 3) */ \
   I7_STRING_IN_I6_COMMENT, \
   I7_SUBSTITUTION_IN_I6_COMMENT, \
   /* States involving I6 with a routine context and embedded I7 */ \
   I7_IN_I6_IN_ROUTINE, /* can take I7 comment levels (occurrence 4) */ \
   I7_STRING_IN_I6_IN_ROUTINE, \
   I7_SUBSTITUTION_IN_I6_IN_ROUTINE, \
-  I7_IN_I6_COMMENT_IN_ROUTINE, /* can take movable I7 comment levels (occurrences 5 and 1) */ \
+  I7_IN_I6_COMMENT_IN_ROUTINE, /* can take I7 comment levels (occurrences 5) */ \
   I7_STRING_IN_I6_COMMENT_IN_ROUTINE, \
   I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE, \
   /* States involving no I6, but in an extract */ \
@@ -68,14 +66,14 @@
   I7_IN_I6_IN_EXTRACT, /* can take I7 comment levels (occurrence 7) */ \
   I7_STRING_IN_I6_IN_EXTRACT, \
   I7_SUBSTITUTION_IN_I6_IN_EXTRACT, \
-  I7_IN_I6_COMMENT_IN_EXTRACT, /* can take movable I7 comment levels (occurrences 8 and 2) */ \
+  I7_IN_I6_COMMENT_IN_EXTRACT, /* can take I7 comment levels (occurrences 8) */ \
   I7_STRING_IN_I6_COMMENT_IN_EXTRACT, \
   I7_SUBSTITUTION_IN_I6_COMMENT_IN_EXTRACT, \
   /* States involving I6 in an extract with a routine context and embedded I7 */ \
   I7_IN_I6_IN_ROUTINE_IN_EXTRACT, /* can take I7 comment levels (occurrence 9) */ \
   I7_STRING_IN_I6_IN_ROUTINE_IN_EXTRACT, \
   I7_SUBSTITUTION_IN_I6_IN_ROUTINE_IN_EXTRACT, \
-  I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, /* can take movable I7 comment levels (occurrences 10 and 3) */ \
+  I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, /* can take I7 comment levels (occurrences 10) */ \
   I7_STRING_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT, \
   I7_SUBSTITUTION_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT
 
@@ -159,20 +157,20 @@ std::ostream&operator <<(std::ostream&out, const lexer_monoid&element);
 
 extern const lexical_state INITIAL_LEXICAL_STATE;
 
-extern lexer_monoid plain_text;			/* (anything not appearing below) */
-extern lexer_monoid double_quote;		/* " */
-extern lexer_monoid left_bracket;		/* [ */
-extern lexer_monoid right_bracket;		/* ] */
-extern lexer_monoid documentation_break;	/* ^J---- DOCUMENTATION ----^J */
-extern lexer_monoid documentation_break_followed_by_indentation;
+extern const lexer_monoid plain_text;			/* (anything not appearing below) */
+extern const lexer_monoid double_quote;		/* " */
+extern const lexer_monoid left_bracket;		/* [ */
+extern const lexer_monoid right_bracket;		/* ] */
+extern const lexer_monoid documentation_break;	/* ^J---- DOCUMENTATION ----^J */
+extern const lexer_monoid documentation_break_followed_by_indentation;
 						/* ^J---- DOCUMENTATION ----^J^I or ...^J^I^I or ... */
-extern lexer_monoid indentation;		/* ^J^I*: or ^J^I or ^J^I^I or ... */
-extern lexer_monoid bare_newline;		/* ^J */
-extern lexer_monoid left_cyclops;		/* (- */
-extern lexer_monoid right_cyclops;		/* -) */
-extern lexer_monoid single_quote;		/* ' (when not the middle ' in ''') */
-extern lexer_monoid bang;			/* ! */
-extern lexer_monoid left_crosseyed_cyclops;	/* (+ */
-extern lexer_monoid right_crosseyed_cyclops;	/* +) */
+extern const lexer_monoid indentation;		/* ^J^I*: or ^J^I or ^J^I^I or ... */
+extern const lexer_monoid bare_newline;		/* ^J */
+extern const lexer_monoid left_cyclops;		/* (- */
+extern const lexer_monoid right_cyclops;		/* -) */
+extern const lexer_monoid single_quote;		/* ' (when not the middle ' in ''') */
+extern const lexer_monoid bang;			/* ! */
+extern const lexer_monoid left_crosseyed_cyclops;	/* (+ */
+extern const lexer_monoid right_crosseyed_cyclops;	/* +) */
 
 #endif
