@@ -33,7 +33,7 @@ public:
   }
 
   stack_monoid&operator +=(const stack_monoid&other) {
-    vector<T>::const_iterator
+    typename std::vector<T>::const_iterator
       pops_begin = other.pops.begin(),
       pops_end = other.pops.end();
     for (; pops_begin != pops_end && pushes.size(); ++pops_begin) {
