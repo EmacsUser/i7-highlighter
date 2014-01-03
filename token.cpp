@@ -42,6 +42,9 @@ token::~token() {
 }
 
 token&token::operator =(const token&copy) {
+  if (&copy == this) {
+    return *this;
+  }
   codepoint_count = copy.codepoint_count;
   line_count = copy.line_count;
   if (text != copy.text) {
