@@ -20,7 +20,11 @@
  * always count length as a message is read in, whereas the sender might have
  * situations where precomputing length is a hassle.)
  *
- * A ``view'' is a portion of a file displayed.  The highlighter will only
+ * A ``buffer'' is a piece of source text, usually a file.  However, some
+ * buffers, notably those that have never been saved, may not exist on the file
+ * system.
+ *
+ * A ``view'' is a portion of a buffer displayed.  The highlighter will only
  * update highlighting for codepoints that appear in one or more views.
  */
 
@@ -39,22 +43,35 @@
 // See below for the possibled highlight codes.
 #define CLIENT_SUPPORT_HIGHLIGHT_CODE	0x00000101 // [highlight code]
 
-// Sent when a file is no longer relevant to the highlighting process.
-#define CLIENT_DISCARD_FILE		0x00010000 // [file number]
-// Sent when a file is determined relevant to the highlighting process.
-// Usually sent for any files being edited as well as included extensions.
-// See below for the possibled file flags, which should be ored together.
-#define CLIENT_INTRODUCE_FILE		0x00010001 // [file number] [file flags] [FILE NAME WITHOUT FILE EXTENSION]
+// Sent when a buffer is no longer relevant to the highlighting process.
+#define CLIENT_DISCARD_BUFFER		0x00010000 // [buffer number]
+// Sent when a buffer is determined relevant to the highlighting process.
+// Usually sent for any buffers being edited as well as included extensions.
+#define CLIENT_INTRODUCE_BUFFER		0x00010001 // [buffer number]
 
-// Sent to signal an edit that has removed codepoints from a file.
-#define CLIENT_REMOVE_CODEPOINTS	0x00010100 // [file number] [inclusive lower bound] [exclusive upper bound]
-// Sent to signal an edit that has added codepoints to a file.
-#define CLIENT_ADD_CODEPOINTS		0x00010101 // [file number] [beginning codepoint index] [INSERTION]
+// Sent when the author's intended use of a buffer, as story source text or as
+// an extension, is no longer clear.  Buffers default to undecided, so this
+// message is rarely used.
+#define CLIENT_MARK_BUFFER_UNDECIDED	0x00010100 // [buffer number]
+// Sent to indicate that a buffer is to hold story source text, not the contents
+// of an extension.
+#define CLIENT_MARK_BUFFER_AS_STORY	0x00010101 // [buffer number]
+// Sent to indicate that a buffer is to hold the contents of an extension, not
+// story source text.  The includable file name is the extension name that this
+// extension can be included as or an empty string if there is no way to
+// included it.  This message should be resent whenever the includable file name
+// changes.
+#define CLIENT_MARK_BUFFER_AS_EXTENSION	0x00010103 // [buffer number] [INCLUDABLE FILE NAME WITHOUT FILE EXTENSION]
+
+// Sent to signal an edit that has removed codepoints from a buffer.
+#define CLIENT_REMOVE_CODEPOINTS	0x00010100 // [buffer number] [inclusive lower bound] [exclusive upper bound]
+// Sent to signal an edit that has added codepoints to a buffer.
+#define CLIENT_ADD_CODEPOINTS		0x00010101 // [buffer number] [beginning codepoint index] [INSERTION]
 
 // Sent when a view no longer exists.
 #define CLIENT_DISCARD_VIEW		0x00020000 // [view number]
-// Sent when a view of the given file is created.  It begins empty.
-#define CLIENT_INTRODUCE_VIEW		0x00020001 // [view number] [file number]
+// Sent when a view of the given buffer is created.  It begins empty.
+#define CLIENT_INTRODUCE_VIEW		0x00020001 // [view number] [buffer number]
 // Sent when a view becomes (effectively) empty but is not destroyed.
 // Useful, for instance, to prevent updates in occluded windows.
 #define CLIENT_CLEAR_VIEW		0x00020002 // [view number]
@@ -72,39 +89,31 @@
 // emphasis is likewise per-view.)
 #define CLIENT_SET_CURSOR		0x00020101 // [view number] [inclusive lower bound] [exclusive upper bound]
 
-/* File flags used in the messages sent by the client (the editor) */
-
-// Sent when the file should be highlighted as an extension rather than a story.
-#define CLIENT_FILE_IS_EXTENSION_FLAG	0x00000001
-// Sent when an extension is in a correct directory to be referenced by
-// inclusions and not also superseded by another copy.
-#define CLIENT_FILE_IS_INCLUDABLE_FLAG	0x00000002
-
 /* Messages sent by the server (the highlighter) */
 
 // Sent to instruct the client to remove all highlighting in the given range.
-#define SERVER_REMOVE_HIGHLIGHTS	0x00010000 // [file number] [inclusive lower bound] [exclusive upper bound]
+#define SERVER_REMOVE_HIGHLIGHTS	0x00010000 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to highlight the given range per the given code.
 // See below for the possibled highlight codes.
-#define SERVER_ADD_HIGHLIGHT		0x00010001 // [file number] [inclusive lower bound] [exclusive upper bound] [highlight code]
-#define SERVER_REMOVE_WARNING		0x00010002 // [file number] [inclusive lower bound] [exclusive upper bound]
+#define SERVER_ADD_HIGHLIGHT		0x00010001 // [buffer number] [inclusive lower bound] [exclusive upper bound] [highlight code]
+#define SERVER_REMOVE_WARNING		0x00010002 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to add warning formatting to the given range.
 // Warning formatting is usually effected by underlining the text orange in
 // addition to any formatting prescribed by its highlights.
-#define SERVER_ADD_WARNING		0x00010003 // [file number] [inclusive lower bound] [exclusive upper bound]
+#define SERVER_ADD_WARNING		0x00010003 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to remove all errors in the given range.
-#define SERVER_REMOVE_ERROR		0x00010004 // [file number] [inclusive lower bound] [exclusive upper bound]
+#define SERVER_REMOVE_ERROR		0x00010004 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to add error formatting to the given range.
 // Error formatting is usually effected by underlining the text red in addition
 // to any formatting prescribed by its highlights.  If an error and warning
 // overlap and conflict in formatting, the error should trump the warning.
-#define SERVER_ADD_ERROR		0x00010005 // [file number] [inclusive lower bound] [exclusive upper bound]
+#define SERVER_ADD_ERROR		0x00010005 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to remove all hovertexts in the given range.
-#define SERVER_REMOVE_HOVERTEXT		0x00010100 // [file number] [inclusive lower bound] [exclusive upper bound]
+#define SERVER_REMOVE_HOVERTEXT		0x00010100 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to add hovertext to the given range.  Hovertext
 // is displayed in a popup or ``tooltip'' when the mouse hovers over the
 // relevant range; there should also be a keyboard command to make it visible.
-#define SERVER_ADD_HOVERTEXT		0x00010101 // [file number] [inclusive lower bound] [exclusive upper bound] [HOVERTEXT]
+#define SERVER_ADD_HOVERTEXT		0x00010101 // [buffer number] [inclusive lower bound] [exclusive upper bound] [HOVERTEXT]
 
 // Sent to instruct the client to remove all emphasis in the given range.
 #define SERVER_REMOVE_EMPHASIS		0x00020000 // [view number] [inclusive lower bound] [exclusive upper bound]
