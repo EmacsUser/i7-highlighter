@@ -125,9 +125,8 @@ void startup_io() {
     case CLIENT_ADD_CODEPOINTS:
       buffer_number = static_cast<unsigned>(read_codepoint());
       beginning = static_cast<unsigned>(read_codepoint());
-      end = static_cast<unsigned>(read_codepoint());
       text = read_string();
-      add_codepoints(buffer_number, beginning, end, text);
+      add_codepoints(buffer_number, beginning, text);
       break;
     case CLIENT_DISCARD_VIEW:
       view_number = static_cast<unsigned>(read_codepoint());
