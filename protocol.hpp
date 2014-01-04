@@ -64,9 +64,9 @@
 #define CLIENT_MARK_BUFFER_AS_EXTENSION	0x00010103 // [buffer number] [INCLUDABLE FILE NAME WITHOUT FILE EXTENSION]
 
 // Sent to signal an edit that has removed codepoints from a buffer.
-#define CLIENT_REMOVE_CODEPOINTS	0x00010100 // [buffer number] [inclusive lower bound] [exclusive upper bound]
+#define CLIENT_REMOVE_CODEPOINTS	0x00010200 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to signal an edit that has added codepoints to a buffer.
-#define CLIENT_ADD_CODEPOINTS		0x00010101 // [buffer number] [beginning codepoint index] [INSERTION]
+#define CLIENT_ADD_CODEPOINTS		0x00010201 // [buffer number] [beginning codepoint index] [INSERTION]
 
 // Sent when a view no longer exists.
 #define CLIENT_DISCARD_VIEW		0x00020000 // [view number]

@@ -139,9 +139,9 @@
 (defconst i7-client-mark-buffer-as-extension ?\x00010103) ;; [buffer number] [INCLUDABLE FILE NAME WITHOUT FILE EXTENSION]
 
 ;; Sent to signal an edit that has removed codepoints from a buffer.
-(defconst i7-client-remove-codepoints ?\x00010100) ;; [buffer number] [inclusive lower bound] [exclusive upper bound]
+(defconst i7-client-remove-codepoints ?\x00010200) ;; [buffer number] [inclusive lower bound] [exclusive upper bound]
 ;; Sent to signal an edit that has added codepoints to a buffer.
-(defconst i7-client-add-codepoints ?\x00010101) ;; [buffer number] [beginning codepoint index] [INSERTION]
+(defconst i7-client-add-codepoints ?\x00010201) ;; [buffer number] [beginning codepoint index] [INSERTION]
 
 ;; Sent when a view no longer exists.
 (defconst i7-client-discard-view ?\x00020000) ;; [view number]
