@@ -20,7 +20,7 @@ void mark_buffer_as_story(unsigned buffer_number);
 void mark_buffer_as_extension(unsigned buffer_number, const i7_string&includable_file_name);
 
 void remove_codepoints(unsigned buffer_number, unsigned beginning, unsigned end);
-void add_codepoints(unsigned buffer_number, unsigned beginning, unsigned end, const i7_string&insertion);
+void add_codepoints(unsigned buffer_number, unsigned beginning, const i7_string&insertion);
 
 void discard_view(unsigned view_number);
 void introduce_view(unsigned view_number, unsigned buffer_number);
