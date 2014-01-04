@@ -96,20 +96,21 @@
 // Sent to instruct the client to highlight the given range per the given code.
 // See below for the possibled highlight codes.
 #define SERVER_ADD_HIGHLIGHT		0x00010001 // [buffer number] [inclusive lower bound] [exclusive upper bound] [highlight code]
-#define SERVER_REMOVE_WARNING		0x00010002 // [buffer number] [inclusive lower bound] [exclusive upper bound]
+// Sent to instruct the client to remove all warnings in the given range.
+#define SERVER_REMOVE_WARNINGS		0x00010002 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to add warning formatting to the given range.
 // Warning formatting is usually effected by underlining the text orange in
 // addition to any formatting prescribed by its highlights.
 #define SERVER_ADD_WARNING		0x00010003 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to remove all errors in the given range.
-#define SERVER_REMOVE_ERROR		0x00010004 // [buffer number] [inclusive lower bound] [exclusive upper bound]
+#define SERVER_REMOVE_ERRORS		0x00010004 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to add error formatting to the given range.
 // Error formatting is usually effected by underlining the text red in addition
 // to any formatting prescribed by its highlights.  If an error and warning
 // overlap and conflict in formatting, the error should trump the warning.
 #define SERVER_ADD_ERROR		0x00010005 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to remove all hovertexts in the given range.
-#define SERVER_REMOVE_HOVERTEXT		0x00010100 // [buffer number] [inclusive lower bound] [exclusive upper bound]
+#define SERVER_REMOVE_HOVERTEXTS	0x00010100 // [buffer number] [inclusive lower bound] [exclusive upper bound]
 // Sent to instruct the client to add hovertext to the given range.  Hovertext
 // is displayed in a popup or ``tooltip'' when the mouse hovers over the
 // relevant range; there should also be a keyboard command to make it visible.
@@ -122,10 +123,10 @@
 // by its highlights.
 #define SERVER_ADD_EMPHASIS		0x00020001 // [view number] [inclusive lower bound] [exclusive upper bound]
 // Sent when suggestions sent earlier no longer apply.
-#define SERVER_CLEAR_SUGGESTIONS	0x00020100
+#define SERVER_CLEAR_SUGGESTIONS	0x00020100 // [view number]
 // Sent to suggest text to insert after the cursor.  Will be sent multiple times
 // if there are multiple suggestions.
-#define SERVER_MAKE_SUGGESTION		0x00020101 // [SUGGESTION]
+#define SERVER_MAKE_SUGGESTION		0x00020101 // [view number] [SUGGESTION]
 
 /* Highlight codes (partly based on the Inform Technical Manual) */
 
