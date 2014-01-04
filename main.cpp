@@ -1,10 +1,6 @@
-#include "monoid_sequence.hpp"
-
-#include "codepoints.hpp"
-#include "lexer_monoid.hpp"
-#include "token.hpp"
+#include "io.hpp"
 
 int main() {
-  monoid_sequence<token>placeholder;
+  startup_io();
   return 0;
 }
