@@ -388,6 +388,7 @@
     (+ (lsh first-byte 24) (lsh second-byte 16) (lsh third-byte 8) fourth-byte)))
 
 (defun i7-highlighter-handler ()
+  "Inspect the message at the start of `i7-highlighter-reply-buffer' and invoke the matching hander."
   (if (>= (length i7-highlighter-reply-buffer) 4)
       (catch 'i7-reply-from-server-incomplete
 	(while i7-highlighter-reply-buffer
@@ -397,6 +398,7 @@
 	      (i7-highlighter-error-handler)))))))
 
 (defun i7-highlighter-error-handler ()
+  "Complain about a message with no handler and kill the Inform 7 highlighter."
   (message
    (format
     "Inform 7 highlighter gave unrecognized reply: %s / \"%s\".\nKilling process."
