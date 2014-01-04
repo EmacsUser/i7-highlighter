@@ -127,7 +127,7 @@ static lexical_reference_points_from_edit no_reference_points_from_edit(token_se
   return { INITIAL_LEXICAL_STATE, source_text.end(), source_text.end(), INITIAL_LEXICAL_STATE };
 }
 
-static lexical_reference_points_from_edit insert_text(token_sequence&source_text, token_iterator insertion_point, unsigned insertion_offset, const i7_string&insertion, lexical_state old_post_relex_state) {
+static lexical_reference_points_from_edit add_codepoints(token_sequence&source_text, token_iterator insertion_point, unsigned insertion_offset, const i7_string&insertion, lexical_state old_post_relex_state) {
   assert(insertion.size());
   lexer insertion_lexer;
   token_iterator relexing_point = insertion_point;
@@ -190,7 +190,7 @@ static lexical_reference_points_from_edit insert_text(token_sequence&source_text
   return { pre_relex_state, first_change, insertion_point, old_post_relex_state };
 }
 
-lexical_reference_points_from_edit remove_text(token_sequence&source_text, unsigned beginning_codepoint_index, unsigned end_codepoint_index) {
+lexical_reference_points_from_edit remove_codepoints(token_sequence&source_text, unsigned beginning_codepoint_index, unsigned end_codepoint_index) {
   assert(beginning_codepoint_index <= end_codepoint_index);
   if (beginning_codepoint_index == end_codepoint_index) {
     return no_reference_points_from_edit(source_text);
@@ -210,14 +210,14 @@ lexical_reference_points_from_edit remove_text(token_sequence&source_text, unsig
   lexical_state old_post_relex_state = prior_sum.get_lexical_effect()(INITIAL_LEXICAL_STATE);
   for (token_iterator removal_point = beginning_removal_point; removal_point != reinsertion_point; removal_point = source_text.erase(removal_point));
   if (remaining_text.size()) {
-    return insert_text(source_text, reinsertion_point, 0, remaining_text, old_post_relex_state);
+    return add_codepoints(source_text, reinsertion_point, 0, remaining_text, old_post_relex_state);
   }
   prior_sum = source_text.sum_over_interval(source_text.begin(), reinsertion_point);
   lexical_state pre_relex_state = prior_sum.get_lexical_effect()(INITIAL_LEXICAL_STATE);
   return { pre_relex_state, reinsertion_point, reinsertion_point, old_post_relex_state };
 }
 
-lexical_reference_points_from_edit insert_text(token_sequence&source_text, unsigned beginning_codepoint_index, const i7_string&insertion) {
+lexical_reference_points_from_edit add_codepoints(token_sequence&source_text, unsigned beginning_codepoint_index, const i7_string&insertion) {
   if (!insertion.size()) {
     return no_reference_points_from_edit(source_text);
   }
@@ -226,5 +226,5 @@ lexical_reference_points_from_edit insert_text(token_sequence&source_text, unsig
   assert(insertion_point != source_text.end() || !insertion_offset);
   token prior_sum = source_text.sum_over_interval(source_text.begin(), insertion_point);
   lexical_state old_post_relex_state = prior_sum.get_lexical_effect()(INITIAL_LEXICAL_STATE);
-  return insert_text(source_text, insertion_point, insertion_offset, insertion, old_post_relex_state);
+  return add_codepoints(source_text, insertion_point, insertion_offset, insertion, old_post_relex_state);
 }

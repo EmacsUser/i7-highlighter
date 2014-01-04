@@ -17,7 +17,7 @@ struct lexical_reference_points_from_edit {
   lexical_state old_post_relex_state;
 };
 
-lexical_reference_points_from_edit remove_text(token_sequence&source_text, unsigned beginning_codepoint_index, unsigned end_codepoint_index);
-lexical_reference_points_from_edit insert_text(token_sequence&source_text, unsigned beginning_codepoint_index, const i7_string&insertion);
+lexical_reference_points_from_edit remove_codepoints(token_sequence&source_text, unsigned beginning_codepoint_index, unsigned end_codepoint_index);
+lexical_reference_points_from_edit add_codepoints(token_sequence&source_text, unsigned beginning_codepoint_index, const i7_string&insertion);
 
 #endif
