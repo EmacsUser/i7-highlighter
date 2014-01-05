@@ -431,9 +431,13 @@ const lexer_monoid bang =
 
 const lexer_monoid left_crosseyed_cyclops =
   lexer_monoid{I6, I7_IN_I6} +
+  lexer_monoid{I6_COMMENT, I7_IN_I6_COMMENT} +
   lexer_monoid{I6_IN_ROUTINE, I7_IN_I6_IN_ROUTINE} +
+  lexer_monoid{I6_COMMENT_IN_ROUTINE, I7_IN_I6_COMMENT_IN_ROUTINE} +
   lexer_monoid{I6_IN_EXTRACT, I7_IN_I6_IN_EXTRACT} +
-  lexer_monoid{I6_IN_ROUTINE_IN_EXTRACT, I7_IN_I6_IN_ROUTINE_IN_EXTRACT};
+  lexer_monoid{I6_COMMENT_IN_EXTRACT, I7_IN_I6_COMMENT_IN_EXTRACT} +
+  lexer_monoid{I6_IN_ROUTINE_IN_EXTRACT, I7_IN_I6_IN_ROUTINE_IN_EXTRACT} +
+  lexer_monoid{I6_COMMENT_IN_ROUTINE_IN_EXTRACT, I7_IN_I6_COMMENT_IN_ROUTINE_IN_EXTRACT};
 
 const lexer_monoid right_crosseyed_cyclops =
   lexer_monoid{I7_IN_I6, I6} +

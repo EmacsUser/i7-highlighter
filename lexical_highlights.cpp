@@ -175,6 +175,7 @@ highlight_code get_highlight_code(lexical_state before, lexical_state after) {
   case I6_COMMENT_IN_CONTEXT:
     switch (supersuperstate_of(before)) {
     case I7_IN_CONTEXT:
+      return HIGHLIGHT_I7_DELIMITER;
     case I6_IN_CONTEXT:
     case DOCUMENTATION_IN_CONTEXT:
       return HIGHLIGHT_COMMENT_DELIMITER;
