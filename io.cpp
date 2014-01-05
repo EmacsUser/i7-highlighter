@@ -36,12 +36,14 @@ static inline uint32_t read_codepoint() {
   if (endianness_undetermined) {
     endianness_undetermined = false;
     flip_endianness = (codepoint_union.codepoint > 0xFFFF);
-    uint8_t swap = codepoint_union.bytes.a;
-    codepoint_union.bytes.a = codepoint_union.bytes.d;
-    codepoint_union.bytes.d = swap;
-    swap = codepoint_union.bytes.b;
-    codepoint_union.bytes.b = codepoint_union.bytes.c;
-    codepoint_union.bytes.c = swap;
+    if (flip_endianness) {
+      uint8_t swap = codepoint_union.bytes.a;
+      codepoint_union.bytes.a = codepoint_union.bytes.d;
+      codepoint_union.bytes.d = swap;
+      swap = codepoint_union.bytes.b;
+      codepoint_union.bytes.b = codepoint_union.bytes.c;
+      codepoint_union.bytes.c = swap;
+    }
   }
   return codepoint_union.codepoint;
 }
@@ -158,8 +160,10 @@ void startup_io() {
       set_cursor(view_number, beginning, end);
       break;
     default:
+      printf("Unrecognized command from editor: %08x.", command);
       exit(1);
     }
+    fflush(stdout);
   }
 }
 
