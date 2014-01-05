@@ -111,7 +111,13 @@
   (set-process-filter i7-highlighter-process 'i7-highlighter-process-filter)
   (dolist (highlight-code i7-highlights-known)
     (i7-send-command i7-client-support-highlight-code highlight-code))
-  (i7-send-command i7-client-begin-session) ; TODO: notify the highlighter of the current editor state
+  (i7-send-command i7-client-begin-session)
+  (dolist (buffer (buffer-list))
+    (with-current-buffer buffer
+      (if (eq major-mode 'i7-mode)
+	  (progn
+	    (i7-ensure-buffer-is-i7-buffer buffer)
+	    (i7-buffer-contents-change 1 (1+ (buffer-size buffer)) 0)))))
   (if print-message
       (message (format "Inform 7 highlighter restared.  Current state: %s." (process-status i7-highlighter-process)))))
 
@@ -774,6 +780,7 @@
   (use-local-map i7-mode-map)
   (i7-ensure-highlighter-started)
   (i7-ensure-buffer-is-i7-buffer (current-buffer))
+  (i7-buffer-contents-change 1 (1+ (buffer-size)) 0)
   (setq-local indent-line-function 'i7-indent-line)
   (add-hook 'window-scroll-functions 'i7-window-scroll-change)
   (add-hook 'window-size-change-functions 'i7-frame-size-change)
