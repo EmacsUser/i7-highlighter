@@ -412,7 +412,6 @@
   "Inspect the message at the start of `i7-highlighter-reply-buffer' and invoke the matching hander."
   (catch 'i7-reply-from-server-incomplete
     (while (>= (length i7-highlighter-reply-buffer) 4)
-      (message (format "%s means %s." (i7-peek-reply-quadruple) (gethash (i7-peek-reply-quadruple) i7-highlighter-handlers)))
       (let ((handler (gethash (i7-peek-reply-quadruple) i7-highlighter-handlers)))
 	(if handler
 	    (apply handler nil)
