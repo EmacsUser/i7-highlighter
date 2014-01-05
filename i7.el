@@ -555,7 +555,7 @@
     (if (> old-length 0)
 	(i7-send-command i7-client-remove-codepoints buffer-number (1- beginning) (+ -1 beginning old-length)))
     (if (< beginning end)
-	(i7-send-command i7-client-add-codepoints buffer-number (1- beginning) (buffer-substring beginning end))))
+	(i7-send-command i7-client-add-codepoints buffer-number (1- beginning) (buffer-substring-no-properties beginning end))))
   (accept-process-output))
 
 
@@ -584,7 +584,7 @@
 (defun i7-remove-highlights ()
   "Remove highlights as requested by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 16)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((buffer-number (i7-pop-reply-quadruple))
 	(beginning (1+ (i7-pop-reply-quadruple)))
@@ -596,7 +596,7 @@
 (defun i7-add-highlight ()
   "Add a highlight as requested by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 20)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((buffer-number (i7-pop-reply-quadruple))
 	(beginning (1+ (i7-pop-reply-quadruple)))
@@ -610,7 +610,7 @@
 (defun i7-remove-warnings ()
   "Remove warnings as requested by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 16)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((buffer-number (i7-pop-reply-quadruple))
 	(beginning (1+ (i7-pop-reply-quadruple)))
@@ -622,7 +622,7 @@
 (defun i7-add-warning ()
   "Add a warning as requested by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 16)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((buffer-number (i7-pop-reply-quadruple))
 	(beginning (1+ (i7-pop-reply-quadruple)))
@@ -636,7 +636,7 @@
 (defun i7-remove-errors ()
   "Remove errors as requested by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 16)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((buffer-number (i7-pop-reply-quadruple))
 	(beginning (1+ (i7-pop-reply-quadruple)))
@@ -648,7 +648,7 @@
 (defun i7-add-error ()
   "Add an error as requested by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 16)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((buffer-number (i7-pop-reply-quadruple))
 	(beginning (1+ (i7-pop-reply-quadruple)))
@@ -662,7 +662,7 @@
 (defun i7-remove-hovertexts ()
   "Remove hovertexts as requested by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 16)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((buffer-number (i7-pop-reply-quadruple))
 	(beginning (1+ (i7-pop-reply-quadruple)))
@@ -674,9 +674,9 @@
 (defun i7-add-hovertext ()
   "Add an hovertext as requested by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 20)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (unless (i7-highlighter-reply-end-of-string 16)
-    (throw 'i7-reply-from-server-incomplete))
+    (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((buffer-number (i7-pop-reply-quadruple))
 	(beginning (1+ (i7-pop-reply-quadruple)))
@@ -691,7 +691,7 @@
 (defun i7-remove-emphasis ()
   "Remove emphasis as requested by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 16)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((window (gethash (i7-pop-reply-quadruple) i7-reverse-view-numbering))
 	(beginning (1+ (i7-pop-reply-quadruple)))
@@ -703,7 +703,7 @@
 (defun i7-add-emphasis ()
   "Add an emphasis as requested by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 16)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((window (gethash (i7-pop-reply-quadruple) i7-reverse-view-numbering))
 	(beginning (1+ (i7-pop-reply-quadruple)))
@@ -722,7 +722,7 @@
 (defun i7-clear-suggestions ()
   "Clear suggestions sent earlier by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 8)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((window (gethash (i7-pop-reply-quadruple) i7-reverse-view-numbering)))
     (progn))) ; TODO
@@ -730,9 +730,9 @@
 (defun i7-make-suggestion ()
   "Make a suggestion sent by the Inform 7 highlighter."
   (if (< (length i7-highlighter-reply-buffer) 8)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (unless (i7-highlighter-reply-end-of-string 4)
-      (throw 'i7-reply-from-server-incomplete))
+      (throw 'i7-reply-from-server-incomplete nil))
   (i7-pop-reply-quadruple) ; discard the command
   (let ((window (gethash (i7-pop-reply-quadruple) i7-reverse-view-numbering))
 	(suggestion (i7-pop-reply-string)))
