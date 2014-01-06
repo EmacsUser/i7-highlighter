@@ -745,6 +745,92 @@
     (progn))) ; TODO
 
 
+;;; Indentation:
+
+;; TODO:
+
+;; The following is based on python.el, and not fully aware of I7 syntax.  It
+;; will eventually be replaced with queries to the highlighter.  (Though maybe
+;; this implementation will be kept as a backup in case the highlighter process
+;; is killed.)
+
+(defvar i7-maximum-indentation nil
+  "Internal use.")
+
+(defun i7-update-maximum-indentation ()
+  "Calculate and return the Inform 7 indentation for the line at point."
+  (save-excursion
+    (previous-line)
+    (setq
+     i7-maximum-indentation
+     (+ 
+      (current-indentation)
+      (if (member ?: (append (thing-at-point 'line) nil)) tab-width 0)))))
+
+(defun i7-block-end-p ()
+  "Non-nil if this is a line closing a block, or a blank line
+indented to where it would close a block."
+  (< (current-indentation)
+     (save-excursion
+       (previous-line)
+       (current-indentation))))
+
+(defun i7-indent-line-1 (&optional leave)
+  "Subroutine of `i7-indent-line'.
+Does non-repeated indentation.  LEAVE non-nil means leave
+indentation if it is valid, i.e. at most the value returned
+by `i7-update-maximum-indentation'."
+  (let ((current (current-indentation))
+	(target (i7-update-maximum-indentation))
+	(position-from-end (- (point-max) (point))))
+    (if (or (= current target)
+	    (and
+	     leave
+	     (<= current target)
+	     (= (mod current tab-width) 0)))
+	(if (< (current-column) current)
+	    (back-to-indentation))
+      (beginning-of-line)
+      (delete-horizontal-space)
+      (indent-to target)
+      (if (> (- (point-max) position-from-end) (point))
+	  (goto-char (- (point-max) position-from-end))))))
+
+(defun i7-indent-line ()
+  "Indent current line as Inform 7 code.
+When invoked via `indent-for-tab-command', cycle through possible
+indentations for current line.  The cycle is broken by a command
+different from `indent-for-tab-command', i.e. successive TABs do
+the cycling."
+  (interactive)
+  (if (and (eq this-command 'indent-for-tab-command)
+	   (eq last-command this-command))
+      (if (< i7-maximum-indentation tab-width)
+	  (message "Sole indentation")
+	(let ((current (+ (current-indentation) tab-width)))
+	  (if (> current i7-maximum-indentation)
+	      (setq current 0))
+	  (beginning-of-line)
+	  (delete-horizontal-space)
+	  (indent-to current)))
+    (i7-indent-line-1)))
+
+(defun i7-indent-region (start end)
+  "`indent-region-function' for Inform 7.
+Leaves validly-indented lines alone, i.e. doesn't indent to
+another valid position."
+  (save-excursion
+    (goto-char end)
+    (setq end (point-marker))
+    (goto-char start)
+    (or (bolp) (forward-line 1))
+    (while (< (point) end)
+      (or (and (bolp) (eolp))
+	  (i7-indent-line-1 t))
+      (forward-line 1))
+    (move-marker end nil)))
+
+
 ;;; The mode essentials:
 
 ;; The file extensions.
@@ -754,12 +840,6 @@
 (defvar i7-mode-syntax-table
   (make-syntax-table)
   "Syntax table for Inform 7 major mode.")
-
-;; The indentation.
-(defun i7-indent-line ()
-  "Indent the current line as Inform 7 code."
-  (interactive)
-  (save-excursion))
 
 ;; The keymap.
 (defvar i7-mode-map
@@ -786,7 +866,6 @@
   (add-hook 'window-size-change-functions 'i7-frame-size-change)
   (add-hook 'after-change-functions 'i7-buffer-contents-change nil t)
   (add-hook 'post-command-hook 'i7-cursors-change)
-  ;; (setq-local font-lock-function 'i7-font-lock-function)
   (setq major-mode 'i7-mode)
   (setq mode-name "I7")
   (run-mode-hooks 'i7-mode-hook))
