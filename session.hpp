@@ -7,7 +7,7 @@
 class session : public context {
 protected:
   using buffer_map = std::unordered_map<unsigned, buffer>;
-  buffer_map buffers;
+  buffer_map				buffers;
 
 public:
   void discard_buffer(unsigned buffer_number);
