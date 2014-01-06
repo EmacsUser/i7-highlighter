@@ -415,13 +415,14 @@
     (+ (lsh first-byte 24) (lsh second-byte 16) (lsh third-byte 8) fourth-byte)))
 
 (defun i7-highlighter-handler ()
-  "Inspect the message at the start of `i7-highlighter-reply-buffer' and invoke the matching hander."
-  (catch 'i7-reply-from-server-incomplete
-    (while (>= (length i7-highlighter-reply-buffer) 4)
-      (let ((handler (gethash (i7-peek-reply-quadruple) i7-highlighter-handlers)))
-	(if handler
-	    (apply handler nil)
-	  (i7-highlighter-error-handler))))))
+  "Repeatedly inspect the message at the start of `i7-highlighter-reply-buffer' and invoke the matching hander."
+  (if (>= (length i7-highlighter-reply-buffer) 4)
+      (catch 'i7-reply-from-server-incomplete
+	(let ((handler (gethash (i7-peek-reply-quadruple) i7-highlighter-handlers)))
+	  (if handler
+	      (apply handler nil)
+	    (i7-highlighter-error-handler)))
+	(run-at-time nil nil 'i7-highlighter-handler))))
 
 (defun i7-highlighter-error-handler ()
   "Complain about a message with no handler and kill the Inform 7 highlighter."
