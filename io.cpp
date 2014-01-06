@@ -50,7 +50,7 @@ static inline uint32_t read_codepoint() {
 
 static inline i7_string read_string() {
   i7_string_stream stream;
-  for (uint32_t codepoint; codepoint = read_codepoint();) {
+  for (uint32_t codepoint; (codepoint = read_codepoint());) {
     stream << static_cast<i7_codepoint>(codepoint);
   }
   return stream.str();

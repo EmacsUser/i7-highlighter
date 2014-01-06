@@ -4,16 +4,23 @@
 # The external program
 i7-highlighter
 
-# Compiled Object files
+# Dependency lists
+Dependencies
+*.d
+
+# Tags files
+TAGS
+
+# Compiled object files
 *.slo
 *.lo
 *.o
 
-# Compiled Dynamic libraries
+# Compiled dynamic libraries
 *.so
 *.dylib
 
-# Compiled Static libraries
+# Compiled static libraries
 *.lai
 *.la
 *.a

@@ -42,6 +42,7 @@ public:
     }
     pops.insert(pops.end(), pops_begin, pops_end);
     pushes.insert(pushes.end(), other.pushes.begin(), other.pushes.end());
+    return *this;
   }
 };
 

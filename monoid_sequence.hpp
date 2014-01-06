@@ -304,13 +304,13 @@ protected:
 
     vertex*get_leftmost_descendant() {
       vertex*result = this;
-      for (vertex*below; below = result->left; result = below);
+      for (vertex*below; (below = result->left); result = below);
       return result;
     }
 
     vertex*get_rightmost_descendant() {
       vertex*result = this;
-      for (vertex*below; below = result->right; result = below);
+      for (vertex*below; (below = result->right); result = below);
       return result;
     }
 
@@ -536,12 +536,12 @@ public:
     assert(position.sequence == this);
     if (position.position) {
       iterator result = position.position->insert_before(difference, *this);
-      for (vertex*parent; parent = root->get_parent(); root = parent);
+      for (vertex*parent; (parent = root->get_parent()); root = parent);
       return result;
     }
     if (root) {
       iterator result = root->get_rightmost_descendant()->insert_after(difference, *this);
-      for (vertex*parent; parent = root->get_parent(); root = parent);
+      for (vertex*parent; (parent = root->get_parent()); root = parent);
       return result;
     }
     return {this, root = new vertex{difference}};

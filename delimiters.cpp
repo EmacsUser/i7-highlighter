@@ -120,3 +120,4 @@ static stack_monoid<delimiter>get_delimiter_effect(const lexical_state&before, c
   return stack_monoid<delimiter>{0};
 }
 
+auto unused = get_delimiter_effect;
