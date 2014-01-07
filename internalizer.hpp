@@ -27,10 +27,12 @@ protected:
   map_type				elements;
 
 public:
-  const T&lookup(const T&key) const {
+  const T*lookup(const T&key) const {
     typename map_type::const_iterator iterator = elements.find({&key});
-    assert(iterator != elements.end());
-    return *(iterator->first.value);
+    if (iterator == elements.end()) {
+      return nullptr;
+    }
+    return iterator->first.value;
   }
 
   const T&acquire(const T&key) {
