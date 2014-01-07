@@ -2,6 +2,7 @@
 #define PARSER_HEADER
 
 #include <vector>
+#include <unordered_set>
 
 #include "codepoints.hpp"
 #include "token.hpp"
@@ -13,6 +14,7 @@ using token_iterator = typename token_sequence::iterator;
 
 class parseme {
 protected:
+  friend struct std::hash<parseme>;
   // True if this parseme matches an exact token; false if it matches any
   // expression of a given kind.
   bool					terminal;
@@ -29,8 +31,10 @@ public:
   parseme(const i7_string&terminal_word);
   parseme(const i7_string&nonterminal_kind, unsigned tier);
   parseme(const parseme&copy);
+  parseme(const parseme&copy, unsigned replacement_tier);
   ~parseme();
-  parseme&operator =(const parseme&other);
+  parseme&operator =(const parseme&copy);
+  bool operator ==(const parseme&other) const;
 
   bool is_terminal() const;
   bool is_empty_terminal() const;
@@ -41,8 +45,17 @@ public:
   bool accepts(const parseme&other) const;
 };
 
+namespace std {
+  template<>struct hash<parseme> {
+    size_t operator()(const ::parseme&parseme) const {
+      return reinterpret_cast<size_t>(parseme.value) + parseme.tier;
+    }
+  };
+}
+
 class production {
 protected:
+  friend struct std::hash<production>;
   // The left-hand side of the production.
   parseme				result;
   // The right-hand side of the production, in the form (...|...)(...|...)...,
@@ -57,15 +70,18 @@ protected:
 
 public:
   production(const parseme&result) : result{result} {}
+  bool operator ==(const production&other) const;
 
   void add_slot();
   void add_alternative_to_slot(const parseme&alternative);
 
   const parseme&get_result() const;
   unsigned get_slot_count() const;
+  const std::vector<parseme>&get_alternatives(unsigned slot_index) const;
 
   bool accepts(unsigned slot_index, const ::parseme&parseme) const;
   bool can_begin_with(const ::token&token) const;
+  bool can_begin_with(const ::parseme&parseme) const;
 };
 
 class match : public fact, public annotation {
@@ -86,6 +102,7 @@ public:
 
 protected:
   match(const match&prefix, bool ignored);
+  match(const ::production&production, const match&addendum);
   match(const match&prefix, const match&addendum);
 
   bool can_continue_with_token() const;
@@ -103,5 +120,14 @@ public:
   virtual size_t hash() const override;
   virtual bool is_equal_to_instance_of_like_class(const annotation&other) const override;
 };
+
+namespace std {
+  template<>struct hash<production> {
+    size_t operator()(const ::production&production) const {
+      static hash<parseme>subhash;
+      return subhash(production.result) + production.alternatives_sequence.size();
+    }
+  };
+}
 
 #endif

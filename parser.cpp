@@ -8,6 +8,9 @@
 
 using namespace std;
 
+static internalizer<parseme>parseme_bank;
+static internalizer<production>production_bank;
+
 parseme::parseme(const i7_string&terminal_word) :
   terminal{true},
   value{&vocabulary.acquire(terminal_word)},
@@ -23,19 +26,31 @@ parseme::parseme(const parseme&copy) :
   value{&vocabulary.acquire(*copy.value)},
   tier{copy.tier} {}
 
+parseme::parseme(const parseme&copy, unsigned replacement_tier) :
+  terminal{copy.terminal},
+  value{&vocabulary.acquire(*copy.value)},
+  tier{replacement_tier} {}
+
 parseme::~parseme() {
   vocabulary.release(*value);
 }
 
-parseme&parseme::operator =(const parseme&other) {
-  if (&other == this) {
+parseme&parseme::operator =(const parseme&copy) {
+  if (&copy == this) {
     return *this;
   }
   vocabulary.release(*value);
-  terminal = other.terminal;
-  value = &vocabulary.acquire(*other.value);
-  tier = other.tier;
+  terminal = copy.terminal;
+  value = &vocabulary.acquire(*copy.value);
+  tier = copy.tier;
   return *this;
+}
+
+bool parseme::operator ==(const parseme&other) const {
+  return
+    (terminal == other.terminal) &&
+    (value == other.value) &&
+    (tier == other.tier);
 }
 
 bool parseme::is_terminal() const {
@@ -57,13 +72,16 @@ unsigned parseme::get_tier() const {
 }
 
 bool parseme::accepts(const parseme&other) const {
-  if (terminal != other.terminal) {
-    return false;
-  }
-  if (value != other.value) {
-    return false;
-  }
-  return tier >= other.tier;
+  return
+    (terminal == other.terminal) &&
+    (value == other.value) &&
+    (tier >= other.tier);
+}
+
+bool production::operator ==(const production&other) const {
+  return
+    (result == other.result) &&
+    (alternatives_sequence == other.alternatives_sequence);
 }
 
 void production::add_slot() {
@@ -82,6 +100,10 @@ unsigned production::get_slot_count() const {
   return alternatives_sequence.size();
 }
 
+const vector<parseme>&production::get_alternatives(unsigned slot_index) const {
+  return alternatives_sequence[slot_index];
+}
+
 bool production::accepts(unsigned slot_index, const ::parseme&parseme) const {
   assert(slot_index < alternatives_sequence.size());
   for (const ::parseme&alternative : alternatives_sequence[slot_index]) {
@@ -94,6 +116,10 @@ bool production::accepts(unsigned slot_index, const ::parseme&parseme) const {
 
 bool production::can_begin_with(const ::token&token) const {
   return alternatives_sequence.size() && accepts(0, {*token.get_text()});
+}
+
+bool production::can_begin_with(const ::parseme&parseme) const {
+  return alternatives_sequence.size() && accepts(0, parseme);
 }
 
 static token_iterator next(const token_iterator iterator) {
@@ -134,6 +160,15 @@ match::match(const match&prefix, bool ignored) :
   slots_filled{prefix.slots_filled + 1},
   beginning{prefix.beginning},
   end{next(prefix.end)} {}
+
+match::match(const ::production&production, const match&addendum) :
+  fact{addendum.context},
+  production{production},
+  slots_filled{1},
+  beginning{addendum.beginning},
+  end{addendum.end} {
+  assert(production.can_begin_with(addendum.production.get_result()));
+}
 
 match::match(const match&prefix, const match&addendum) :
   fact{prefix.context},
@@ -176,8 +211,13 @@ void match::unjustification_hook() const {
 vector<fact*>match::get_immediate_consequences() const {
   vector<fact*>results;
   if (is_complete()) {
-    // TODO: Look for productions that this match's production's result can
-    // begin.
+    const parseme*key = parseme_bank.lookup(production.get_result());
+    if (key) {
+      auto range = session.get_productions().equal_range(key);
+      for (auto i = range.first; i != range.second; ++i) {
+	results.push_back(new match{*i->second, *this});
+      }
+    }
     for (const annotation_wrapper&wrapper : beginning->get_annotations(type_index{typeid(*this)})) {
       const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
       if (candidate_prefix.can_continue_with(*this)) {

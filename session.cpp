@@ -26,6 +26,10 @@ void ::session::add_codepoints(unsigned buffer_number, unsigned beginning, const
   i->second.add_codepoints(beginning, insertion);
 }
 
+session::production_map&::session::get_productions() {
+  return productions;
+}
+
 typename ::session session;
 
 void discard_buffer(unsigned buffer_number) {
