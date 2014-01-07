@@ -26,27 +26,25 @@ class fact {
 protected:
   ::context&				context;
   /* A deduction's justification hook is run whenever a new argument for that
-   * fact becomes true; it is responsible for noting the deduction's truth.  It
-   * should return true iff the fact was previously false.  The default, to
-   * return true without doing anything else, is the expected behavior for
-   * observations.
+   * fact becomes true; it is responsible for noting the deduction's truth.
    */
-  virtual bool justification_hook() const { return true; }
+  virtual void justification_hook() const {}
   /* A deduction's unjustification hook is run whenever an argument for that
    * fact becomes false; it is responsible for noting the deduction's falsity if
-   * no other arguments survive.  It should return true iff the fact became
-   * false.  The default, to return true without doing anything else, is the
-   * expected behavior for observations.
+   * no other arguments survive.
    */
-  virtual bool unjustification_hook() const { return true; }
+  virtual void unjustification_hook() const {}
   /* The immediate consequences of a fact are those facts for which a direct
    * argument could be constructed in the current context, assuming that this
    * fact were made true.  Usually the implementation of this method is not in
    * the source file for the fact class itself but in a file that knows how all
    * the various fact classes are to relate, the source file for the context,
    * for instance.
+   *
+   * The elements should be allocated by new, because the callers will delete
+   * them.
    */
-  virtual std::vector<fact>get_immediate_consequences() const = 0;
+  virtual std::vector<fact*>get_immediate_consequences() const = 0;
 public:
   fact(::context&context) : context(context) {}
   virtual ~fact() {}

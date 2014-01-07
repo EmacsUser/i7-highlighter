@@ -1,5 +1,6 @@
 TARGET = i7-highlighter
 SOURCES = \
+    annotation \
     buffer \
     codepoints \
     deduction \
@@ -9,6 +10,7 @@ SOURCES = \
     lexer_monoid \
     lexical_highlights \
     main \
+    parser \
     relexer \
     session \
     token
