@@ -85,7 +85,7 @@ public:
   match(typename ::session&session, const ::production&production, token_iterator beginning, token_iterator end);
 
 protected:
-  match(const match&prefix);
+  match(const match&prefix, bool ignored);
   match(const match&prefix, const match&addendum);
 
   bool can_continue_with_token() const;

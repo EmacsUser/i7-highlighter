@@ -128,7 +128,7 @@ match::match(typename ::session&session, const ::production&production, token_it
   assert(!production.get_slot_count());
 }
 
-match::match(const match&prefix) :
+match::match(const match&prefix, bool ignored) :
   fact{prefix.context},
   production{prefix.production},
   slots_filled{prefix.slots_filled + 1},
@@ -175,14 +175,23 @@ void match::unjustification_hook() const {
 
 vector<fact*>match::get_immediate_consequences() const {
   vector<fact*>results;
-  if (end.can_increment()) {
-    if (can_continue_with_token()) {
-      results.push_back(new match{*this});
+  if (is_complete()) {
+    // TODO: Look for productions that this match's production's result can
+    // begin.
+    for (const annotation_wrapper&wrapper : beginning->get_annotations(type_index{typeid(*this)})) {
+      const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
+      if (candidate_prefix.can_continue_with(*this)) {
+	results.push_back(new match{candidate_prefix, *this});
+      }
     }
-    for (const annotation_wrapper&wrapper : end->get_annotations(type_index(typeid(*this)))) {
+  } else if (end.can_increment()) {
+    if (can_continue_with_token()) {
+      results.push_back(new match{*this, false});
+    }
+    for (const annotation_wrapper&wrapper : end->get_annotations(type_index{typeid(*this)})) {
       const match&candidate_addendum = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
       if (can_continue_with(candidate_addendum)) {
-	results.push_back(new match{*this});
+	results.push_back(new match{*this, candidate_addendum});
       }
     }
   }
