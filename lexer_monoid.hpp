@@ -80,7 +80,6 @@
 enum lexical_superstate { LEXICAL_SUPERSTATE_LIST, LEXICAL_SUPERSTATE_COUNT };
 
 static const unsigned COUNT_OF_LEXICAL_SUPERSTATES_WITH_I7_COMMENT_LEVELS = 11;
-static const unsigned COUNT_OF_LEXICAL_SUPERSTATES_WITH_MOVABLE_I7_COMMENT_LEVELS = 4;
 
 std::ostream&operator <<(std::ostream&out, lexical_superstate superstate);
 
