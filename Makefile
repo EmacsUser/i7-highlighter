@@ -1,6 +1,8 @@
 TARGET = i7-highlighter
 SOURCES = \
     annotation \
+    annotation_fact \
+    base_class \
     buffer \
     codepoints \
     deduction \
@@ -13,7 +15,8 @@ SOURCES = \
     parser \
     relexer \
     session \
-    token
+    token \
+    type_indices
 
 CC = g++
 CFLAGS = -std=c++11 -Wall -Wno-switch -Werror -g

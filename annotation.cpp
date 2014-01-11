@@ -1,13 +1,8 @@
+#include <typeinfo>
+
 #include "annotation.hpp"
 
 using namespace std;
-
-bool annotation::operator ==(const annotation&other) const {
-  if (typeid(*this) != typeid(other)) {
-    return false;
-  }
-  return is_equal_to_instance_of_like_class(other);
-}
 
 const annotatable::specific_annotations_type annotatable::no_specific_annotations;
 

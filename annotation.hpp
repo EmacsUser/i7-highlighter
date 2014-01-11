@@ -1,50 +1,15 @@
 #ifndef ANNOTATION_HEADER
 #define ANNOTATION_HEADER
 
-#include <cassert>
-
-#include <typeinfo>
 #include <typeindex>
 #include <unordered_set>
 #include <unordered_map>
 
-class annotation_wrapper;
+#include "base_class.hpp"
 
-class annotation {
-protected:
-  friend struct std::hash<annotation_wrapper>;
-  virtual size_t hash() const = 0;
-  virtual bool is_equal_to_instance_of_like_class(const annotation&other) const = 0;
+class annotation : public base_class {};
 
-public:
-  virtual ~annotation() {}
-  virtual annotation*clone() const = 0;
-  bool operator ==(const annotation&other) const;
-};
-
-class annotation_wrapper {
-protected:
-  friend struct std::hash<annotation_wrapper>;
-  const ::annotation*			annotation;
-
-public:
-  annotation_wrapper(const ::annotation&annotation) :
-    annotation{annotation.clone()} {}
-  operator const ::annotation&() const {
-    return *annotation;
-  }
-  bool operator ==(const annotation_wrapper&other) const {
-    return *annotation == *other.annotation;
-  }
-};
-
-namespace std {
-  template<>struct hash<annotation_wrapper> {
-    size_t operator()(const ::annotation_wrapper&annotation_wrapper) const {
-      return annotation_wrapper.annotation->hash();
-    }
-  };
-}
+using annotation_wrapper = clone_wrapper<annotation>;
 
 class annotatable {
 protected:

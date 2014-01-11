@@ -4,6 +4,16 @@
 #include <cassert>
 #include <unordered_map>
 
+#include "base_class.hpp"
+
+template<typename T>const T*internalizer_clone(const T&copy, typename std::enable_if<!std::is_base_of<base_class, T>::value, T>::type* = nullptr) {
+  return new T{copy};
+}
+
+template<typename T>const T*internalizer_clone(const T&copy, typename std::enable_if<std::is_base_of<base_class, T>::value, T>::type* = nullptr) {
+  return dynamic_cast<const T*>(copy.clone());
+}
+
 template<typename T>class internalizer {
 protected:
   struct key_type {
@@ -41,7 +51,7 @@ public:
       ++(iterator->second);
       return *(iterator->first.value);
     }
-    T*internalization = new T{key};
+    const T*internalization = internalizer_clone(key);
     insertion_result_type result = elements.insert(value_type{{internalization}, 1});
     assert(result.second);
     return *internalization;
