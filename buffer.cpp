@@ -3,6 +3,7 @@
 #include "buffer.hpp"
 #include "lexical_highlights.hpp"
 #include "io.hpp"
+#include "parser.hpp"
 
 using namespace std;
 
@@ -59,6 +60,20 @@ void buffer::rehighlight(const lexical_reference_points_from_edit&reference_poin
   for (const ::highlight&highlight : new_highlights) {
     add_highlight(buffer_number, highlight.beginning_codepoint_index, highlight.end_codepoint_index, highlight.highlight_code);
   }
+}
+
+void buffer::add_terminal_beginning(token_iterator beginning) {
+  terminal_beginnings.insert(&parseme_bank.acquire(token_terminal{*beginning->get_text()}), beginning);
+}
+
+void buffer::remove_terminal_beginning(token_iterator beginning) {
+  const parseme*key = parseme_bank.lookup(token_terminal{*beginning->get_text()});
+  terminal_beginnings.erase(key, beginning);
+  parseme_bank.release(*key);
+}
+
+const unordered_set<token_iterator>&buffer::get_terminal_beginnings(const parseme&terminal) {
+  return terminal_beginnings[parseme_bank.lookup(terminal)];
 }
 
 void buffer::remove_codepoints(unsigned beginning, unsigned end) {

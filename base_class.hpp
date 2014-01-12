@@ -1,8 +1,7 @@
 #ifndef BASE_CLASS_HEADER
 #define BASE_CLASS_HEADER
 
-#include <functional>
-#include <type_traits>
+#include "hashable.hpp"
 
 class base_class {
 protected:
@@ -13,15 +12,6 @@ public:
   bool operator ==(const base_class&other) const;
   virtual size_t hash() const = 0;
 };
-
-namespace std {
-  template<typename T>struct hash {
-    using sfinae = typename enable_if<is_base_of<base_class, T>::value, T>::type;
-    size_t operator()(const T&instance) const {
-      return instance.hash();
-    }
-  };
-}
 
 template<typename T>class clone_wrapper {
  protected:
@@ -45,7 +35,6 @@ template<typename T>class clone_wrapper {
 
 namespace std {
   template<typename T>struct hash<clone_wrapper<T> > {
-    using sfinae = typename enable_if<is_base_of<base_class, T>::value, T>::type;
     static hash<T>			subhash;
     size_t operator()(const clone_wrapper<T>&instance) const {
       return subhash(static_cast<const T&>(instance));

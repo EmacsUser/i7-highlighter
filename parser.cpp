@@ -6,8 +6,16 @@
 
 using namespace std;
 
+token_available::token_available(typename ::session&session, ::buffer*buffer, token_iterator self) :
+  negative_annotation_fact{session},
+  buffer{buffer},
+  self{self} {
+  assert(self.can_increment());
+}
+
 token_available::token_available(typename ::session&session, token_iterator self) :
   negative_annotation_fact{session},
+  buffer(nullptr),
   self{self} {
   assert(self.can_increment());
 }
@@ -21,15 +29,30 @@ vector<const annotatable*>token_available::get_annotatables() const {
   return {&*self};
 }
 
+void token_available::justification_hook() const {
+  assert(buffer);
+  if (!operator bool()) {
+    buffer->add_terminal_beginning(self);
+  }
+  negative_annotation_fact::justification_hook();
+}
+
+void token_available::unjustification_hook() const {
+  assert(buffer);
+  negative_annotation_fact::unjustification_hook();
+  if (!operator bool()) {
+    buffer->remove_terminal_beginning(self);
+  }
+}
+
 std::vector<fact*>token_available::get_immediate_consequences() const {
   vector<fact*>results;
   // Case I: The token begins a match
   const parseme*key = parseme_bank.lookup(token_terminal{*self->get_text()});
   if (key) {
-    auto range = dynamic_cast<typename ::session&>(context).get_productions(key);
-    for (auto i = range.first; i != range.second; ++i) {
-      if (i->second->can_begin_with(*self)) {
-    	results.push_back(new match{dynamic_cast<typename ::session&>(context), *i->second, self});
+    for (const ::production*production : dynamic_cast<typename ::session&>(context).get_productions(key)) {
+      if (production->can_begin_with(*self)) {
+    	results.push_back(new match{dynamic_cast<typename ::session&>(context), *production, self});
       }
     }
   }
@@ -445,9 +468,8 @@ vector<fact*>match::get_immediate_consequences() const {
     // Case I: The complete match begins another
     const parseme*key = parseme_bank.lookup(production->get_result());
     if (key) {
-      auto range = dynamic_cast<typename ::session&>(context).get_productions(key);
-      for (auto i = range.first; i != range.second; ++i) {
-	results.push_back(new match{*i->second, *this});
+      for (const ::production*production : dynamic_cast<typename ::session&>(context).get_productions(key)) {
+	results.push_back(new match{*production, *this});
       }
     }
     // Case II: The complete match continues another

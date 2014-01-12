@@ -3,6 +3,8 @@
 
 #include <cassert>
 
+#include "hashable.hpp"
+
 /*
  * A sorted sequence of monoid elements that allows fast lookups for sums over
  * intervals.  (``Fast'' here means amortized O(ln(n)^2) in the non-abelian
@@ -483,6 +485,10 @@ public:
       iterator copy = *this;
       ++*this;
       return copy;
+    }
+
+    size_t hash() const {
+      return reinterpret_cast<size_t>(position);
     }
 
     bool operator ==(const iterator&other) const {

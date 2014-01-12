@@ -10,24 +10,29 @@
 #include "token.hpp"
 #include "monoid_sequence.hpp"
 #include "annotation.hpp"
+#include "buffer.hpp"
 #include "deduction.hpp"
 #include "annotation_fact.hpp"
 #include "session.hpp"
 
+using token_sequence = monoid_sequence<token>;
 using token_iterator = typename token_sequence::iterator;
 
 class token_available : public negative_annotation_fact {
 protected:
+  ::buffer*				buffer;
   const token_iterator			self;
 
 public:
+  token_available(typename ::session&session, ::buffer*buffer, token_iterator self);
   token_available(typename ::session&session, token_iterator self);
 
 protected:
   virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
 
   virtual std::vector<const annotatable*>get_annotatables() const override;
-
+  virtual void justification_hook() const override;
+  virtual void unjustification_hook() const override;
   virtual std::vector<fact*>get_immediate_consequences() const override;
 
 public:
