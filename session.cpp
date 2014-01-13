@@ -48,7 +48,7 @@ void session::discard_buffer(unsigned buffer_number) {
 }
 
 void session::introduce_buffer(unsigned buffer_number) {
-  buffers.insert({buffer_number, new buffer{buffer_number}});
+  buffers.insert({buffer_number, new buffer{*this, buffer_number}});
 }
 
 void session::remove_codepoints(unsigned buffer_number, unsigned beginning, unsigned end) {

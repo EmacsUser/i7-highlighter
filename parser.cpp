@@ -83,6 +83,7 @@ next_token::next_token(typename ::session&session, token_iterator self, token_it
   self{self},
   next{next} {
   assert(self.can_increment());
+  assert(self != next);
 }
 
 bool next_token::is_equal_to_instance_of_like_class(const base_class&other) const {
@@ -91,7 +92,10 @@ bool next_token::is_equal_to_instance_of_like_class(const base_class&other) cons
 }
 
 vector<const annotatable*>next_token::get_annotatables() const {
-  return {&*self, &*next};
+  if (next.can_increment()) {
+    return {&*self, &*next};
+  }
+  return {&*self};
 }
 
 vector<fact*>next_token::get_immediate_consequences() const {
@@ -226,6 +230,10 @@ size_t token_terminal::hash() const {
 nonterminal::nonterminal(const i7_string&kind_name, unsigned tier) :
   kind_name{&vocabulary.acquire(kind_name)},
   tier{tier} {}
+
+nonterminal::nonterminal(const nonterminal&copy) :
+  kind_name{&vocabulary.acquire(*copy.kind_name)},
+  tier{copy.tier} {}
 
 nonterminal::nonterminal(const nonterminal&copy, unsigned replacement_tier) :
   kind_name{&vocabulary.acquire(*copy.kind_name)},
@@ -403,6 +411,7 @@ match::match(typename ::session&session, ::buffer*buffer, const ::production&pro
   slots_filled{slots_filled},
   beginning{beginning},
   inclusive_end{beginning} {
+  assert(production);
   assert(production.can_begin_with(*beginning).size());
 }
 
@@ -428,6 +437,7 @@ match::match(const ::production&production, const match&addendum) :
   slots_filled{1},
   beginning{addendum.beginning},
   inclusive_end{addendum.inclusive_end} {
+  assert(production);
   assert(production.can_begin_with(addendum.production->get_result()).size());
 }
 

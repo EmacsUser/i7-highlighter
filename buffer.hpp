@@ -9,6 +9,7 @@
 #include "custom_multimap.hpp"
 #include "relexer.hpp"
 
+class session;
 class parseme;
 
 enum buffer_type {
@@ -21,6 +22,7 @@ class buffer {
 protected:
   using token_sequence = monoid_sequence<token>;
   using token_iterator = typename token_sequence::iterator;
+  typename ::session&			owner;
   unsigned				buffer_number;
   buffer_type				type;
   i7_string				includable_file_name;
@@ -29,7 +31,8 @@ protected:
 					parseme_beginnings;
 
 public:
-  buffer(unsigned buffer_number) :
+  buffer(typename ::session&owner, unsigned buffer_number) :
+    owner(owner),
     buffer_number{buffer_number},
     type{UNDECIDED_BUFFER} {}
 

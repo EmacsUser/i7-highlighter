@@ -19,9 +19,18 @@ template<typename T>class clone_wrapper {
 
  public:
   clone_wrapper(const T&value) : value{dynamic_cast<T*>(value.clone())} {}
+  clone_wrapper(const clone_wrapper&copy) : value{dynamic_cast<T*>(copy.value->clone())} {}
   ~clone_wrapper() {
     delete value;
   }
+  clone_wrapper&operator =(const clone_wrapper&other) {
+    if (this != &other) {
+      delete value;
+      value = dynamic_cast<T*>(other.value->clone());
+    }
+    return *this;
+  }
+
   operator T&() {
     return *value;
   }

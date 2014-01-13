@@ -6,13 +6,13 @@
 #include "codepoints.hpp"
 #include "lexer_monoid.hpp"
 #include "internalizer.hpp"
-#include "annotation.hpp"
+#include "annotation_fact.hpp"
 
 extern internalizer<i7_string>vocabulary;
 
 /* The token class represents lexical tokens as elements of a product monoid for
    storage in a monoid_sequence. */
-class token : public annotatable {
+class token : public fact_annotatable {
 protected:
   unsigned				codepoint_count;
   unsigned				line_count;

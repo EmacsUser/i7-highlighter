@@ -54,9 +54,9 @@ public:
    * be called on observations; it signals that the observation was false but
    * has become true. */
   void justify();
-  /* Except in the internals of the fact class, the unjustify method should only
-   * be called on observations; it signals that the observation was true but has
-   * become false. */
+  /* Except in the internals of the fact class, the unjustify method should
+   * (normally) only be called on observations; it signals that the observation
+   * was true but has become false. */
   void unjustify();
 };
 

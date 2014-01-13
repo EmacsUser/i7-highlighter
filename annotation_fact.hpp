@@ -33,4 +33,9 @@ public:
   void surreptitiously_make_false() const;
 };
 
+class fact_annotatable : public annotatable {
+public:
+  virtual void unjustify_all_annotation_facts();
+};
+
 #endif

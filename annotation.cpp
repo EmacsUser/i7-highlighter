@@ -25,7 +25,6 @@ void annotatable::remove_annotation(const ::annotation&annotation) const {
   }
   const_specific_annotations_iterator j = i->second.find(annotation);
   if (j != i->second.end()) {
-    delete &static_cast<const ::annotation&>(*j);
     i->second.erase(j);
     if (i->second.empty()) {
       const_cast<annotations_type&>(annotations).erase(i);

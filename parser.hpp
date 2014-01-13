@@ -125,6 +125,7 @@ protected:
 
 public:
   nonterminal(const i7_string&kind_name, unsigned tier);
+  nonterminal(const nonterminal&copy);
   nonterminal(const nonterminal&copy, unsigned replacement_tier);
   virtual ~nonterminal();
 

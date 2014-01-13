@@ -53,6 +53,25 @@ void buffer::rehighlight(const lexical_reference_points_from_edit&reference_poin
     highlight_before = highlight_after;
   }
   //
+  for (monoid_sequence<token>::iterator j = reference_points_from_edit.start_of_relexed_text; j != i; ++j) {
+    token_available available{owner, this, j};
+    available.surreptitiously_make_false();
+    assert(j->has_annotation(available));
+  }
+  if (reference_points_from_edit.start_of_relexed_text.can_decrement()) {
+    monoid_sequence<token>::iterator k = reference_points_from_edit.start_of_relexed_text;
+    --k;
+    next_token next{owner, k, reference_points_from_edit.start_of_relexed_text};
+    next.justify();
+  }
+  for (monoid_sequence<token>::iterator j = reference_points_from_edit.start_of_relexed_text, k = j; j != i; j = k) {
+    ++k;
+    token_available available{owner, this, j};
+    available.justify();
+    next_token next{owner, j, k};
+    next.justify();
+  }
+  //
   if (highlight_codepoint_index_before < codepoint_index_before) {
     new_highlights.push_back({ highlight_codepoint_index_before, codepoint_index_before, highlight_before });
   }
