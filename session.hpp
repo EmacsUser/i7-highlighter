@@ -13,7 +13,7 @@ class production;
 
 class session : public context {
 protected:
-  using buffer_map = std::unordered_map<unsigned, buffer>;
+  using buffer_map = std::unordered_map<unsigned, buffer*>;
   using production_set = std::unordered_set<const production*>;
   using production_map = custom_multimap<const parseme*, const production*>;
   buffer_map				buffers;
@@ -24,6 +24,8 @@ public:
   // Destructor intentionally omitted, as, at the moment, the only instance is a
   // static global, which does not need to clean up.
   // ~session();
+
+  const buffer_map&get_buffers() const;
 
   const production_set&get_productions() const;
   const production_set&get_productions(const parseme*beginning) const;

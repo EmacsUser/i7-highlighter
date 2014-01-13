@@ -63,17 +63,27 @@ void buffer::rehighlight(const lexical_reference_points_from_edit&reference_poin
 }
 
 void buffer::add_terminal_beginning(token_iterator beginning) {
-  terminal_beginnings.insert(&parseme_bank.acquire(token_terminal{*beginning->get_text()}), beginning);
+  parseme_beginnings.insert(&parseme_bank.acquire(token_terminal{*beginning->get_text()}), beginning);
 }
 
 void buffer::remove_terminal_beginning(token_iterator beginning) {
   const parseme*key = parseme_bank.lookup(token_terminal{*beginning->get_text()});
-  terminal_beginnings.erase(key, beginning);
+  parseme_beginnings.erase(key, beginning);
   parseme_bank.release(*key);
 }
 
-const unordered_set<token_iterator>&buffer::get_terminal_beginnings(const parseme&terminal) {
-  return terminal_beginnings[parseme_bank.lookup(terminal)];
+void buffer::add_parseme_beginning(const ::parseme&parseme, token_iterator beginning) {
+  parseme_beginnings.insert(&parseme_bank.acquire(parseme), beginning);
+}
+
+void buffer::remove_parseme_beginning(const ::parseme&parseme, token_iterator beginning) {
+  const ::parseme*key = parseme_bank.lookup(parseme);
+  parseme_beginnings.erase(key, beginning);
+  parseme_bank.release(*key);
+}
+
+const unordered_set<token_iterator>&buffer::get_parseme_beginnings(const parseme&terminal) {
+  return parseme_beginnings[parseme_bank.lookup(terminal)];
 }
 
 void buffer::remove_codepoints(unsigned beginning, unsigned end) {

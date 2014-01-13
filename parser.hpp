@@ -143,6 +143,12 @@ public:
 };
 
 class production : public base_class, public fact {
+public:
+  struct possible_beginning {
+    const unsigned			epsilon_count;
+    const ::parseme*			parseme;
+  };
+
 protected:
   // The left-hand side of the production.
   nonterminal				result;
@@ -160,7 +166,7 @@ protected:
   // mid-construction.
   unsigned				epsilon_prefix_length;
   // All of the non-epsilon parsemes that may begin this production.
-  std::vector<const parseme*>		beginnings;
+  std::vector<possible_beginning>	beginnings;
   // The cached hash value.
   size_t				hash_value;
 
@@ -181,12 +187,12 @@ public:
 
   const nonterminal&get_result() const;
   unsigned get_slot_count() const;
-  const std::vector<const parseme*>&get_beginnings() const;
+  const std::vector<possible_beginning>&get_beginnings() const;
   const std::vector<const parseme*>&get_alternatives(unsigned slot_index) const;
 
   bool accepts(unsigned slot_index, const ::parseme&parseme) const;
-  bool can_begin_with(const ::token&token) const;
-  bool can_begin_with(const ::parseme&parseme) const;
+  std::vector<unsigned>can_begin_with(const ::token&token) const;
+  std::vector<unsigned>can_begin_with(const ::parseme&parseme) const;
 
   virtual operator bool() const override;
 
@@ -196,6 +202,7 @@ public:
 
 class match : public annotation_fact {
 protected:
+  ::buffer*				buffer;
   // The production that is matched or partially matched.
   const ::production*			production;
   // The number of slots matched in that production.
@@ -208,8 +215,8 @@ protected:
   const token_iterator			inclusive_end;
 
 public:
-  match(typename ::session&session, const ::production&production, const unsigned slots_filled, token_iterator beginning, token_iterator inclusive_end);
-  match(typename ::session&session, const ::production&production, token_iterator beginning);
+  match(typename ::session&session, ::buffer*buffer, const ::production&production, const unsigned slots_filled, token_iterator beginning, token_iterator inclusive_end);
+  match(typename ::session&session, ::buffer*buffer, const ::production&production, const unsigned slots_filled, token_iterator beginning);
   ~match();
 
 protected:
@@ -226,7 +233,8 @@ protected:
   virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
 
   virtual std::vector<const annotatable*>get_annotatables() const override;
-
+  virtual void justification_hook() const override;
+  virtual void unjustification_hook() const override;
   virtual std::vector<fact*>get_immediate_consequences() const override;
 
 public:

@@ -51,8 +51,8 @@ std::vector<fact*>token_available::get_immediate_consequences() const {
   const parseme*key = parseme_bank.lookup(token_terminal{*self->get_text()});
   if (key) {
     for (const ::production*production : dynamic_cast<typename ::session&>(context).get_productions(key)) {
-      if (production->can_begin_with(*self)) {
-    	results.push_back(new match{dynamic_cast<typename ::session&>(context), *production, self});
+      for (unsigned slot_index : production->can_begin_with(*self)) {
+    	results.push_back(new match{dynamic_cast<typename ::session&>(context), buffer, *production, slot_index + 1, self});
       }
     }
   }
@@ -297,7 +297,15 @@ void production::unjustification_hook() const {
 
 vector<fact*>production::get_immediate_consequences() const {
   vector<fact*>results;
-  // TODO
+  // Case I: A token begins a match or a match begins another match
+  for (const auto&buffer_mapping : dynamic_cast<typename ::session&>(context).get_buffers()) {
+    for (const possible_beginning&beginning : beginnings) {
+      for (token_iterator position : buffer_mapping.second->get_parseme_beginnings(*beginning.parseme)) {
+	results.push_back(new match{dynamic_cast<typename ::session&>(context), buffer_mapping.second, *this, beginning.epsilon_count + 1, position});
+      }
+    }
+  }
+  // Done
   return results;
 }
 
@@ -315,7 +323,7 @@ void production::add_alternative_to_last_slot(const parseme&alternative) {
     if (dynamic_cast<const epsilon_terminal*>(internalization)) {
       epsilon_prefix_length = alternatives_sequence.size();
     } else {
-      beginnings.push_back(internalization);
+      beginnings.push_back({static_cast<unsigned>(alternatives_sequence.size() - 1), internalization});
     }
   }
   hash_value += reinterpret_cast<size_t>(internalization);
@@ -329,7 +337,7 @@ unsigned production::get_slot_count() const {
   return alternatives_sequence.size();
 }
 
-const std::vector<const parseme*>&production::get_beginnings() const {
+const std::vector<production::possible_beginning>&production::get_beginnings() const {
   return beginnings;
 }
 
@@ -347,19 +355,22 @@ bool production::accepts(unsigned slot_index, const ::parseme&parseme) const {
   return false;
 }
 
-bool production::can_begin_with(const ::token&token) const {
-  return
-    beginnings.size() && // for early rejection
-    can_begin_with(token_terminal{*token.get_text()});
+std::vector<unsigned>production::can_begin_with(const ::token&token) const {
+  std::vector<unsigned>results;
+  if (beginnings.size()) { // for early rejection
+    return {};
+  }
+  return can_begin_with(token_terminal{*token.get_text()});
 }
 
-bool production::can_begin_with(const ::parseme&parseme) const {
-  for (const ::parseme*beginning : beginnings) {
-    if (beginning->accepts(parseme)) {
-      return true;
+std::vector<unsigned>production::can_begin_with(const ::parseme&parseme) const {
+  std::vector<unsigned>results;
+  for (const possible_beginning&beginning : beginnings) {
+    if (beginning.parseme->accepts(parseme)) {
+      results.push_back(beginning.epsilon_count);
     }
   }
-  return false;
+  return results;
 }
 
 production::operator bool() const {
@@ -375,8 +386,9 @@ size_t production::hash() const {
   return hash_value;
 }
 
-match::match(typename ::session&session, const ::production&production, const unsigned slots_filled, const token_iterator beginning, const token_iterator inclusive_end) :
+match::match(typename ::session&session, ::buffer*buffer, const ::production&production, const unsigned slots_filled, const token_iterator beginning, const token_iterator inclusive_end) :
   annotation_fact{session},
+  buffer{buffer},
   production{&production_bank.acquire(production)},
   slots_filled{slots_filled},
   beginning{beginning},
@@ -384,13 +396,14 @@ match::match(typename ::session&session, const ::production&production, const un
   assert(production);
 }
 
-match::match(typename ::session&session, const ::production&production, token_iterator beginning) :
+match::match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning) :
   annotation_fact{session},
+  buffer{buffer},
   production{&production_bank.acquire(production)},
-  slots_filled{1},
+  slots_filled{slots_filled},
   beginning{beginning},
   inclusive_end{beginning} {
-  assert(production.can_begin_with(*beginning));
+  assert(production.can_begin_with(*beginning).size());
 }
 
 match::~match() {
@@ -399,30 +412,34 @@ match::~match() {
 
 match::match(const match&prefix, token_iterator inclusive_end) :
   annotation_fact{prefix.context},
+  buffer{prefix.buffer},
   production{&production_bank.acquire(*prefix.production)},
   slots_filled{prefix.slots_filled + 1},
   beginning{prefix.beginning},
   inclusive_end{inclusive_end} {
   assert(beginning != inclusive_end);
-  assert(next(beginning) == inclusive_end);
+  assert(prefix.inclusive_end == inclusive_end || next(prefix.inclusive_end) == inclusive_end);
 }
 
 match::match(const ::production&production, const match&addendum) :
   annotation_fact{addendum.context},
+  buffer{addendum.buffer},
   production{&production_bank.acquire(production)},
   slots_filled{1},
   beginning{addendum.beginning},
   inclusive_end{addendum.inclusive_end} {
-  assert(production.can_begin_with(addendum.production->get_result()));
+  assert(production.can_begin_with(addendum.production->get_result()).size());
 }
 
 match::match(const match&prefix, const match&addendum) :
   annotation_fact{prefix.context},
+  buffer{prefix.buffer},
   production{&production_bank.acquire(*prefix.production)},
   slots_filled{prefix.slots_filled + 1},
   beginning{prefix.beginning},
   inclusive_end{addendum.inclusive_end} {
   assert(&prefix.context == &addendum.context);
+  assert(prefix.buffer == addendum.buffer);
   assert(prefix.inclusive_end != addendum.beginning);
   assert(next(prefix.inclusive_end) == addendum.beginning);
 }
@@ -462,6 +479,22 @@ vector<const annotatable*>match::get_annotatables() const {
   return {&*beginning, &*inclusive_end};
 }
 
+void match::justification_hook() const {
+  assert(buffer);
+  if (!operator bool()) {
+    buffer->add_parseme_beginning(production->get_result(), beginning);
+  }
+  annotation_fact::justification_hook();
+}
+
+void match::unjustification_hook() const {
+  assert(buffer);
+  annotation_fact::unjustification_hook();
+  if (!operator bool()) {
+    buffer->remove_parseme_beginning(production->get_result(), beginning);
+  }
+}
+
 vector<fact*>match::get_immediate_consequences() const {
   vector<fact*>results;
   if (is_complete()) {
@@ -480,13 +513,18 @@ vector<fact*>match::get_immediate_consequences() const {
       }
     }
   } else {
+    // Case III: The match itself continues with an epsilon
+    static epsilon_terminal epsilon;
+    if (production->accepts(slots_filled, epsilon)) {
+      results.push_back(new match{*this, inclusive_end});
+    }
     token_iterator end = next(inclusive_end);
     if (end != inclusive_end) {
-      // Case III: The match itself continues with a token
+      // Case IV: The match itself continues with a token
       if (can_continue_with(end)) {
 	results.push_back(new match{*this, end});
       }
-      // Case IV: The match itself continues with another match
+      // Case V: The match itself continues with another match
       for (const annotation_wrapper&wrapper : end->get_annotations(match_type_index)) {
 	const match&candidate_addendum = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
 	if (can_continue_with(candidate_addendum)) {
@@ -504,7 +542,7 @@ bool match::is_complete() const {
 }
 
 base_class*match::clone() const {
-  return new match{dynamic_cast<typename ::session&>(context), *production, slots_filled, beginning, inclusive_end};
+  return new match{dynamic_cast<typename ::session&>(context), buffer, *production, slots_filled, beginning, inclusive_end};
 }
 
 size_t match::hash() const {

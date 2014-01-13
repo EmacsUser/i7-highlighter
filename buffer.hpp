@@ -26,7 +26,7 @@ protected:
   i7_string				includable_file_name;
   token_sequence			source_text;
   custom_multimap<const parseme*, token_iterator>
-					terminal_beginnings;
+					parseme_beginnings;
 
 public:
   buffer(unsigned buffer_number) :
@@ -39,7 +39,9 @@ protected:
 public:
   void add_terminal_beginning(token_iterator beginning);
   void remove_terminal_beginning(token_iterator beginning);
-  const std::unordered_set<token_iterator>&get_terminal_beginnings(const parseme&terminal);
+  void add_parseme_beginning(const ::parseme&parseme, token_iterator beginning);
+  void remove_parseme_beginning(const ::parseme&parseme, token_iterator beginning);
+  const std::unordered_set<token_iterator>&get_parseme_beginnings(const parseme&terminal);
 
   void remove_codepoints(unsigned beginning, unsigned end);
   void add_codepoints(unsigned beginning, const i7_string&insertion);
