@@ -16,19 +16,19 @@ using namespace std;
     UPDATE_SIDE_STATE;				\
     return; }
 
-#define FLUSH(effect, newlines) {					\
-    results.push_back(token{accumulator.str(), effect, newlines});	\
+#define FLUSH(only_whitespace, effect, newlines) {					\
+    results.push_back(token{accumulator.str(), only_whitespace, effect, newlines});	\
     accumulator.str(i7_string{}); }
 
-#define ACCUMULATE_AND_FLUSH(effect, newlines) {	\
-    accumulator << codepoint;				\
-    FLUSH(effect, newlines);				\
-    state = &lexer::undecided;				\
+#define ACCUMULATE_AND_FLUSH(only_whitespace, effect, newlines) {	\
+    accumulator << codepoint;						\
+    FLUSH(only_whitespace, effect, newlines);				\
+    state = &lexer::undecided;						\
     return; }
 
-#define FLUSH_AND_ACCUMULATE(effect, newlines) {	\
-    FLUSH(effect, newlines);				\
-    undecided(codepoint);				\
+#define FLUSH_AND_ACCUMULATE(only_whitespace, effect, newlines) {	\
+    FLUSH(only_whitespace, effect, newlines);				\
+    undecided(codepoint);						\
     return; }
 
 #define RELEX(inhibitor) {					\
@@ -76,19 +76,19 @@ void lexer::undecided(i7_codepoint codepoint) {
   case '\'':
     ACCUMULATE_TO_STATE(after_single_quote);
   case '"':
-    ACCUMULATE_AND_FLUSH(double_quote, 0);
+    ACCUMULATE_AND_FLUSH(false, double_quote, 0);
   case '[':
-    ACCUMULATE_AND_FLUSH(left_bracket, 0);
+    ACCUMULATE_AND_FLUSH(false, left_bracket, 0);
   case ']':
-    ACCUMULATE_AND_FLUSH(right_bracket, 0);
+    ACCUMULATE_AND_FLUSH(false, right_bracket, 0);
   case '!':
-    ACCUMULATE_AND_FLUSH(bang, 0);
+    ACCUMULATE_AND_FLUSH(false, bang, 0);
   }
   if (is_whitespace(codepoint)) {
     ACCUMULATE_TO_STATE(in_whitespace);
   }
   if (is_i7_punctuation(codepoint)) {
-    ACCUMULATE_AND_FLUSH(plain_text, 0);
+    ACCUMULATE_AND_FLUSH(false, plain_text, 0);
   }
   ACCUMULATE_TO_STATE(in_word);
 }
@@ -96,26 +96,26 @@ void lexer::undecided(i7_codepoint codepoint) {
 void lexer::after_single_quote(i7_codepoint codepoint) {
   switch (codepoint) {
   case '\'':
-    FLUSH(single_quote, 0);
+    FLUSH(false, single_quote, 0);
     ACCUMULATE_TO_STATE(after_two_single_quotes);
   }
-  FLUSH_AND_ACCUMULATE(single_quote, 0);
+  FLUSH_AND_ACCUMULATE(false, single_quote, 0);
 }
 
 void lexer::after_two_single_quotes(i7_codepoint codepoint) {
   switch (codepoint) {
   case '\'':
-    FLUSH(plain_text, 0);
-    ACCUMULATE_AND_FLUSH(single_quote, 0);
+    FLUSH(false, plain_text, 0);
+    ACCUMULATE_AND_FLUSH(false, single_quote, 0);
   }
-  FLUSH_AND_ACCUMULATE(single_quote, 0);
+  FLUSH_AND_ACCUMULATE(false, single_quote, 0);
 }
 
 void lexer::in_whitespace(i7_codepoint codepoint) {
   if (is_whitespace(codepoint) && codepoint != '\r' && codepoint != '\n') {
     ACCUMULATE();
   }
-  FLUSH_AND_ACCUMULATE(plain_text, 0);
+  FLUSH_AND_ACCUMULATE(true, plain_text, 0);
 }
 
 void lexer::after_carriage_return(i7_codepoint codepoint) {
@@ -132,7 +132,7 @@ void lexer::after_carriage_return(i7_codepoint codepoint) {
     }
     break;
   }
-  FLUSH_AND_ACCUMULATE(bare_newline, 1);
+  FLUSH_AND_ACCUMULATE(true, bare_newline, 1);
 }
 
 void lexer::after_line_feed(i7_codepoint codepoint) {
@@ -149,7 +149,7 @@ void lexer::after_line_feed(i7_codepoint codepoint) {
     }
     break;
   }
-  FLUSH_AND_ACCUMULATE(bare_newline, 1);
+  FLUSH_AND_ACCUMULATE(true, bare_newline, 1);
 }
 
 void lexer::after_newline(i7_codepoint codepoint) {
@@ -164,7 +164,7 @@ void lexer::after_newline(i7_codepoint codepoint) {
     }
     break;
   }
-  FLUSH_AND_ACCUMULATE(bare_newline, 1);
+  FLUSH_AND_ACCUMULATE(true, bare_newline, 1);
 }
 
 void lexer::in_indentation(i7_codepoint codepoint) {
@@ -172,40 +172,40 @@ void lexer::in_indentation(i7_codepoint codepoint) {
   case '\t':
     ACCUMULATE();
   }
-  FLUSH_AND_ACCUMULATE(indentation, 1);
+  FLUSH_AND_ACCUMULATE(true, indentation, 1);
 }
 
 void lexer::in_word(i7_codepoint codepoint) {
   if (is_i7_letter(codepoint)) {
     ACCUMULATE();
   }
-  FLUSH_AND_ACCUMULATE(plain_text, 0);
+  FLUSH_AND_ACCUMULATE(false, plain_text, 0);
 }
 
 void lexer::after_open_parenthesis(i7_codepoint codepoint) {
   switch (codepoint) {
   case '-':
-    ACCUMULATE_AND_FLUSH(left_cyclops, 0);
+    ACCUMULATE_AND_FLUSH(false, left_cyclops, 0);
   case '+':
-    ACCUMULATE_AND_FLUSH(left_crosseyed_cyclops, 0);
+    ACCUMULATE_AND_FLUSH(false, left_crosseyed_cyclops, 0);
   }
-  FLUSH_AND_ACCUMULATE(plain_text, 0);
+  FLUSH_AND_ACCUMULATE(false, plain_text, 0);
 }
 
 void lexer::after_hyphen(i7_codepoint codepoint) {
   switch (codepoint) {
   case ')':
-    ACCUMULATE_AND_FLUSH(right_cyclops, 0);
+    ACCUMULATE_AND_FLUSH(false, right_cyclops, 0);
   }
-  FLUSH_AND_ACCUMULATE(plain_text, 0);
+  FLUSH_AND_ACCUMULATE(false, plain_text, 0);
 }
 
 void lexer::after_plus(i7_codepoint codepoint) {
   switch (codepoint) {
   case ')':
-    ACCUMULATE_AND_FLUSH(right_crosseyed_cyclops, 0);
+    ACCUMULATE_AND_FLUSH(false, right_crosseyed_cyclops, 0);
   }
-  FLUSH_AND_ACCUMULATE(plain_text, 0);
+  FLUSH_AND_ACCUMULATE(false, plain_text, 0);
 }
 
 void lexer::in_documentation_break(i7_codepoint codepoint) {
@@ -230,7 +230,7 @@ void lexer::after_documentation_break_ended_by_carriage_return(i7_codepoint code
   case '\t':
     ACCUMULATE_TO_STATE(in_indentation_after_documentation_break);
   }
-  FLUSH_AND_ACCUMULATE(documentation_break, 2);
+  FLUSH_AND_ACCUMULATE(false, documentation_break, 2);
 }
 
 void lexer::after_documentation_break_ended_by_line_feed(i7_codepoint codepoint) {
@@ -240,7 +240,7 @@ void lexer::after_documentation_break_ended_by_line_feed(i7_codepoint codepoint)
   case '\t':
     ACCUMULATE_TO_STATE(in_indentation_after_documentation_break);
   }
-  FLUSH_AND_ACCUMULATE(documentation_break, 2);
+  FLUSH_AND_ACCUMULATE(false, documentation_break, 2);
 }
 
 void lexer::after_documentation_break_ended_by_newline(i7_codepoint codepoint) {
@@ -248,7 +248,7 @@ void lexer::after_documentation_break_ended_by_newline(i7_codepoint codepoint) {
   case '\t':
     ACCUMULATE_TO_STATE(in_indentation_after_documentation_break);
   }
-  FLUSH_AND_ACCUMULATE(documentation_break, 2);
+  FLUSH_AND_ACCUMULATE(false, documentation_break, 2);
 }
 
 void lexer::in_indentation_after_documentation_break(i7_codepoint codepoint) {
@@ -256,5 +256,5 @@ void lexer::in_indentation_after_documentation_break(i7_codepoint codepoint) {
   case '\t':
     ACCUMULATE();
   }
-  FLUSH_AND_ACCUMULATE(documentation_break_followed_by_indentation, 2);
+  FLUSH_AND_ACCUMULATE(false, documentation_break_followed_by_indentation, 2);
 }

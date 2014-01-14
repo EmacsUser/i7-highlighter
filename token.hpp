@@ -18,6 +18,7 @@ protected:
   unsigned				line_count;
   // Text may be null; it is not preserved by addition.
   const i7_string*			text;
+  bool					only_whitespace;
   lexer_monoid				lexical_effect;
 
   // The addition constructor.
@@ -26,7 +27,7 @@ protected:
 public:
   token();
   token(unsigned codepoint_count);
-  token(const i7_string&text, const lexer_monoid&lexical_effect, unsigned line_count);
+  token(const i7_string&text, bool only_whitespace, const lexer_monoid&lexical_effect, unsigned line_count);
   token(const token&copy);
   ~token();
 
@@ -35,6 +36,7 @@ public:
   unsigned get_codepoint_count() const;
   unsigned get_line_count() const;
   const i7_string*get_text() const;
+  bool is_only_whitespace() const;
   const lexer_monoid&get_lexical_effect() const;
 
   bool operator <(const token&other) const;

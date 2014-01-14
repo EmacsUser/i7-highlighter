@@ -9,30 +9,35 @@ token::token(const token&left, const token&right) :
   codepoint_count{left.codepoint_count + right.codepoint_count},
   line_count{left.line_count + right.line_count},
   text{nullptr},
+  only_whitespace{left.only_whitespace && right.only_whitespace},
   lexical_effect{left.lexical_effect + right.lexical_effect} {}
 
 token::token() :
   codepoint_count{0},
   line_count{0},
   text{nullptr},
+  only_whitespace{true},
   lexical_effect{0} {}
 
 token::token(unsigned codepoint_count) :
   codepoint_count{codepoint_count},
   line_count{0},
   text{nullptr},
+  only_whitespace{false},
   lexical_effect{0} {}
 
-token::token(const i7_string&text, const lexer_monoid&lexical_effect, unsigned line_count) :
+token::token(const i7_string&text, bool only_whitespace, const lexer_monoid&lexical_effect, unsigned line_count) :
   codepoint_count{static_cast<unsigned>(text.size())},
   line_count{line_count},
   text{&vocabulary.acquire(text)},
+  only_whitespace{only_whitespace},
   lexical_effect{lexical_effect} {}
 
 token::token(const token&copy) :
   codepoint_count{copy.codepoint_count},
   line_count{copy.line_count},
   text{copy.text ? &vocabulary.acquire(*copy.text) : nullptr},
+  only_whitespace{copy.only_whitespace},
   lexical_effect{copy.lexical_effect} {}
 
 token::~token() {
@@ -58,6 +63,7 @@ token&token::operator =(const token&copy) {
       text = nullptr;
     }
   }
+  only_whitespace = copy.only_whitespace;
   lexical_effect = copy.lexical_effect;
   return *this;
 }
@@ -72,6 +78,10 @@ unsigned token::get_line_count() const {
 
 const i7_string*token::get_text() const {
   return text;
+}
+
+bool token::is_only_whitespace() const {
+  return only_whitespace;
 }
 
 const lexer_monoid&token::get_lexical_effect() const {

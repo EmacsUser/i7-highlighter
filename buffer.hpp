@@ -37,6 +37,7 @@ public:
     type{UNDECIDED_BUFFER} {}
 
 protected:
+  void parser_rehighlight_handler(token_iterator beginning, token_iterator end);
   void rehighlight(const lexical_reference_points_from_edit&reference_points_from_edit);
 
 public:

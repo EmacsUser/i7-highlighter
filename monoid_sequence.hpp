@@ -454,7 +454,10 @@ public:
     // }
 
     bool can_decrement() const {
-      return position->get_previous();
+      if (position) {
+	return position->get_previous();
+      }
+      return sequence->root;
     }
     iterator&operator --() {
       if (position) {

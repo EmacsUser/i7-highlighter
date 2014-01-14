@@ -7,6 +7,59 @@
 
 using namespace std;
 
+static token_iterator previous_by_skipping_whitespace(token_iterator position) {
+  for(token_iterator result = position; result.can_decrement();) {
+    --result;
+    if (!result->is_only_whitespace()) {
+      return result;
+    }
+  }
+  return position;
+}
+
+static token_iterator next_by_skipping_whitespace(token_iterator position) {
+  for(token_iterator result = position; (++result).can_increment();) {
+    if (!result->is_only_whitespace()) {
+      return result;
+    }
+  }
+  return position;
+}
+
+void buffer::parser_rehighlight_handler(token_iterator beginning, token_iterator end) {
+  // Step I: Surreptitiously make negative annotation facts false.
+  for (token_iterator i = beginning; i != end; ++i) {
+    token_available available{owner, this, i};
+    available.surreptitiously_make_false();
+    assert(i->has_annotation(available));
+  }
+  // Step II: Make observations true.
+  token_iterator previous = previous_by_skipping_whitespace(beginning);
+  for (monoid_sequence<token>::iterator i = beginning, j = i; i != end; i = j) {
+    ++j;
+    token_available available{owner, this, i};
+    available.justify();
+    if (!i->is_only_whitespace()) {
+      if (previous != beginning) {
+	::next_token next_token{owner, previous, i};
+	next_token.justify();
+	assert(::previous(i) == previous);
+      }
+      previous = i;
+    }
+  }
+  if (end.can_decrement() && previous != beginning) {
+    token_iterator inclusive_end = end;
+    --inclusive_end;
+    token_iterator next = next_by_skipping_whitespace(inclusive_end);
+    if (next != inclusive_end) {
+      ::next_token next_token{owner, previous, next};
+      next_token.justify();
+      assert(::previous(next) == previous);
+    }
+  }
+}
+
 namespace {
   struct highlight {
     unsigned				beginning_codepoint_index;
@@ -53,25 +106,7 @@ void buffer::rehighlight(const lexical_reference_points_from_edit&reference_poin
     highlight_before = highlight_after;
   }
   //
-  for (monoid_sequence<token>::iterator j = reference_points_from_edit.start_of_relexed_text; j != i; ++j) {
-    token_available available{owner, this, j};
-    available.surreptitiously_make_false();
-    assert(j->has_annotation(available));
-  }
-  if (reference_points_from_edit.start_of_relexed_text.can_decrement()) {
-    monoid_sequence<token>::iterator k = reference_points_from_edit.start_of_relexed_text;
-    --k;
-    next_token next{owner, k, reference_points_from_edit.start_of_relexed_text};
-    next.justify();
-  }
-  for (monoid_sequence<token>::iterator j = reference_points_from_edit.start_of_relexed_text, k = j; j != i; j = k) {
-    ++k;
-    token_available available{owner, this, j};
-    available.justify();
-    next_token next{owner, j, k};
-    next.justify();
-    assert(!k.can_increment() || previous(k) == j);
-  }
+  parser_rehighlight_handler(reference_points_from_edit.start_of_relexed_text, i);
   //
   if (highlight_codepoint_index_before < codepoint_index_before) {
     new_highlights.push_back({ highlight_codepoint_index_before, codepoint_index_before, highlight_before });
