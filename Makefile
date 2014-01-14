@@ -15,8 +15,7 @@ SOURCES = \
     parser \
     relexer \
     session \
-    token \
-    type_indices
+    token
 
 CC = g++
 CFLAGS = -std=c++11 -Wall -Wno-switch -Werror -g

@@ -33,7 +33,7 @@ void annotatable::remove_annotation(const ::annotation&annotation) const {
 }
 
 const annotatable::specific_annotations_type&annotatable::get_annotations(type_index type) const {
-  const_annotations_iterator i = annotations.find(type_index{typeid(annotation)});
+  const_annotations_iterator i = annotations.find(type);
   if (i == annotations.end()) {
     return no_specific_annotations;
   }

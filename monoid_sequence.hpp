@@ -441,9 +441,11 @@ public:
     iterator(const monoid_sequence*sequence, vertex*position) : sequence(sequence), position(position) {}
 
     const T&operator *() const {
+      assert(position);
       return position->get_difference();
     }
     const T*operator ->() const {
+      assert(position);
       return &(position->get_difference());
     }
 

@@ -70,6 +70,7 @@ void buffer::rehighlight(const lexical_reference_points_from_edit&reference_poin
     available.justify();
     next_token next{owner, j, k};
     next.justify();
+    assert(!k.can_increment() || previous(k) == j);
   }
   //
   if (highlight_codepoint_index_before < codepoint_index_before) {

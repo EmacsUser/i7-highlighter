@@ -1,6 +1,6 @@
 #include <cassert>
+#include <typeinfo>
 
-#include "type_indices.hpp"
 #include "parser.hpp"
 #include "internalizer.hpp"
 
@@ -59,7 +59,7 @@ std::vector<fact*>token_available::get_immediate_consequences() const {
   // Case II: The token continues a match
   token_iterator previous = ::previous(self);
   if (previous != self) {
-    for (const annotation_wrapper&wrapper : previous->get_annotations(match_type_index)) {
+    for (const annotation_wrapper&wrapper : previous->get_annotations(typeid(match))) {
       const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
       if (candidate_prefix.can_continue_with(self)) {
 	results.push_back(new match{candidate_prefix, self});
@@ -100,17 +100,19 @@ vector<const annotatable*>next_token::get_annotatables() const {
 
 vector<fact*>next_token::get_immediate_consequences() const {
   vector<fact*>results;
-  for (const annotation_wrapper&wrapper : self->get_annotations(match_type_index)) {
+  for (const annotation_wrapper&wrapper : self->get_annotations(typeid(match))) {
     const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
     // Case I: The next token continues a match
     if (candidate_prefix.can_continue_with(next)) {
       results.push_back(new match{candidate_prefix, next});
     }
     // Case II: The next token begins a match that continues another
-    for (const annotation_wrapper&next_wrapper : next->get_annotations(match_type_index)) {
-      const match&candidate_addendum = dynamic_cast<const match&>(static_cast<const annotation&>(next_wrapper));
-      if (candidate_prefix.can_continue_with(candidate_addendum)) {
-	results.push_back(new match{candidate_prefix, candidate_addendum});
+    if (next.can_increment()) {
+      for (const annotation_wrapper&next_wrapper : next->get_annotations(typeid(match))) {
+	const match&candidate_addendum = dynamic_cast<const match&>(static_cast<const annotation&>(next_wrapper));
+	if (candidate_prefix.can_continue_with(candidate_addendum)) {
+	  results.push_back(new match{candidate_prefix, candidate_addendum});
+	}
       }
     }
   }
@@ -130,11 +132,11 @@ base_class*next_token::clone() const {
 }
 
 size_t next_token::hash() const {
-  return reinterpret_cast<size_t>(&*self); // + reinterpret_cast<size_t>(&*next);
+  return reinterpret_cast<size_t>(&*self);
 }
 
 token_iterator previous(const token_iterator&iterator) {
-  for (const annotation_wrapper&wrapper : iterator->get_annotations(next_token_type_index)) {
+  for (const annotation_wrapper&wrapper : iterator->get_annotations(typeid(next_token))) {
     const next_token&link = dynamic_cast<const next_token&>(static_cast<const annotation&>(wrapper));
     if (link.get_next() == iterator) {
       return link.get_self();
@@ -145,7 +147,7 @@ token_iterator previous(const token_iterator&iterator) {
 }
 
 token_iterator next(const token_iterator&iterator) {
-  for (const annotation_wrapper&wrapper : iterator->get_annotations(next_token_type_index)) {
+  for (const annotation_wrapper&wrapper : iterator->get_annotations(typeid(next_token))) {
     const next_token&link = dynamic_cast<const next_token&>(static_cast<const annotation&>(wrapper));
     if (link.get_self() == iterator) {
       return link.get_next();
@@ -327,7 +329,7 @@ void production::add_alternative_to_last_slot(const parseme&alternative) {
   assert(alternatives_sequence.size());
   const parseme*internalization = &parseme_bank.acquire(alternative);
   alternatives_sequence.back().push_back(internalization);
-  if (epsilon_prefix_length >= alternatives_sequence.size()) {
+  if (epsilon_prefix_length + 1 >= alternatives_sequence.size()) {
     if (dynamic_cast<const epsilon_terminal*>(internalization)) {
       epsilon_prefix_length = alternatives_sequence.size();
     } else {
@@ -365,7 +367,7 @@ bool production::accepts(unsigned slot_index, const ::parseme&parseme) const {
 
 std::vector<unsigned>production::can_begin_with(const ::token&token) const {
   std::vector<unsigned>results;
-  if (beginnings.size()) { // for early rejection
+  if (beginnings.empty()) { // for early rejection
     return {};
   }
   return can_begin_with(token_terminal{*token.get_text()});
@@ -516,7 +518,7 @@ vector<fact*>match::get_immediate_consequences() const {
       }
     }
     // Case II: The complete match continues another
-    for (const annotation_wrapper&wrapper : beginning->get_annotations(match_type_index)) {
+    for (const annotation_wrapper&wrapper : beginning->get_annotations(typeid(match))) {
       const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
       if (candidate_prefix.can_continue_with(*this)) {
 	results.push_back(new match{candidate_prefix, *this});
@@ -529,13 +531,13 @@ vector<fact*>match::get_immediate_consequences() const {
       results.push_back(new match{*this, inclusive_end});
     }
     token_iterator end = next(inclusive_end);
-    if (end != inclusive_end) {
+    if (end != inclusive_end && end.can_increment()) {
       // Case IV: The match itself continues with a token
       if (can_continue_with(end)) {
 	results.push_back(new match{*this, end});
       }
       // Case V: The match itself continues with another match
-      for (const annotation_wrapper&wrapper : end->get_annotations(match_type_index)) {
+      for (const annotation_wrapper&wrapper : end->get_annotations(typeid(match))) {
 	const match&candidate_addendum = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
 	if (can_continue_with(candidate_addendum)) {
 	  results.push_back(new match{*this, candidate_addendum});
