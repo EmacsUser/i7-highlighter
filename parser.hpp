@@ -36,16 +36,18 @@ protected:
   virtual std::vector<fact*>get_immediate_consequences() const override;
 
 public:
-  virtual base_class*clone() const override;
+  virtual const base_class*clone() const override;
   virtual size_t hash() const override;
 };
 
 class next_token : public annotation_fact {
 protected:
+  ::buffer*				buffer;
   const token_iterator			self;
   const token_iterator			next;
 
 public:
+  next_token(typename ::session&session, ::buffer*buffer, token_iterator self, token_iterator next);
   next_token(typename ::session&session, token_iterator self, token_iterator next);
 
 protected:
@@ -59,7 +61,7 @@ public:
   token_iterator get_self() const;
   token_iterator get_next() const;
 
-  virtual base_class*clone() const override;
+  virtual const base_class*clone() const override;
   virtual size_t hash() const override;
 };
 
@@ -68,33 +70,81 @@ public:
 token_iterator previous(const token_iterator&iterator);
 token_iterator next(const token_iterator&iterator);
 
+class end_of_unit : public annotation_fact {
+protected:
+  const token_iterator			self;
+
+public:
+  end_of_unit(typename ::session&session, token_iterator self);
+
+protected:
+  virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
+
+  virtual std::vector<const annotatable*>get_annotatables() const override;
+
+public:
+  token_iterator get_self() const;
+
+  virtual size_t hash() const override;
+};
+
+class end_of_sentence : public end_of_unit {
+protected:
+  ::buffer*				buffer;
+
+public:
+  end_of_sentence(typename ::session&session, ::buffer*buffer, token_iterator self);
+  end_of_sentence(typename ::session&session, token_iterator self);
+
+protected:
+  virtual void justification_hook() const override;
+  virtual void unjustification_hook() const override;
+  virtual std::vector<fact*>get_immediate_consequences() const override;
+  virtual const base_class*clone() const override;
+};
+
 class parseme : public base_class {
 public:
   virtual bool accepts(const token_iterator&iterator) const = 0;
   virtual bool accepts(const parseme&other) const;
 };
 
-class epsilon_terminal : public parseme {
+template<size_t hash_value>class unique_terminal : public parseme {
 protected:
-  virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
+  virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override { return true; }
 
 public:
-  virtual bool accepts(const token_iterator&iterator) const override;
-
-  virtual base_class*clone() const override;
-  virtual size_t hash() const override;
+  virtual size_t hash() const override { return hash_value; }
 };
 
-class something_unrecognized_terminal : public parseme {
-protected:
-  virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
-
+class epsilon_terminal : public unique_terminal<0> {
 public:
   virtual bool accepts(const token_iterator&iterator) const override;
-  virtual bool accepts(const parseme&other) const override;
+  virtual const base_class*clone() const override;
+};
 
-  virtual base_class*clone() const override;
-  virtual size_t hash() const override;
+class digits_terminal : public unique_terminal<1> {
+public:
+  virtual bool accepts(const token_iterator&iterator) const override;
+  virtual const base_class*clone() const override;
+};
+
+class word_terminal : public unique_terminal<2> {
+public:
+  virtual bool accepts(const token_iterator&iterator) const override;
+  virtual const base_class*clone() const override;
+};
+
+class name_word_terminal : public unique_terminal<3> {
+public:
+  virtual bool accepts(const token_iterator&iterator) const override;
+  virtual const base_class*clone() const override;
+};
+
+class end_of_sentence_terminal : public unique_terminal<4> {
+public:
+  virtual bool accepts(const token_iterator&iterator) const override;
+  virtual const base_class*clone() const override;
 };
 
 class token_terminal : public parseme {
@@ -113,7 +163,7 @@ public:
 
   virtual bool accepts(const token_iterator&iterator) const override;
 
-  virtual base_class*clone() const override;
+  virtual const base_class*clone() const override;
   virtual size_t hash() const override;
 };
 
@@ -139,7 +189,7 @@ public:
   virtual bool accepts(const token_iterator&iterator) const override;
   virtual bool accepts(const parseme&other) const override;
 
-  virtual base_class*clone() const override;
+  virtual const base_class*clone() const override;
   virtual size_t hash() const override;
 };
 
@@ -152,7 +202,7 @@ public:
 
 protected:
   // The left-hand side of the production.
-  nonterminal				result;
+  const nonterminal*			result;
   // The right-hand side of the production, in the form (...|...)(...|...)....
   // This is more general than necessary, but simplifies the logic for dynamic
   // productions because Inform 7 declarations create them in exactly the same
@@ -173,20 +223,20 @@ protected:
 
 public:
   production(typename ::session&session, const nonterminal&result);
-  ~production();
+  production(const production&copy);
+  virtual ~production();
 
 protected:
   virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
 
-  virtual void justification_hook() const override;
-  virtual void unjustification_hook() const override;
+  virtual bool can_begin_sentence() const = 0;
   virtual std::vector<fact*>get_immediate_consequences() const override;
 
 public:
   void add_slot();
   void add_alternative_to_last_slot(const parseme&alternative);
 
-  const nonterminal&get_result() const;
+  const nonterminal*get_result() const;
   unsigned get_slot_count() const;
   const std::vector<possible_beginning>&get_beginnings() const;
   const std::vector<const parseme*>&get_alternatives(unsigned slot_index) const;
@@ -195,10 +245,84 @@ public:
   std::vector<unsigned>can_begin_with(const ::token&token) const;
   std::vector<unsigned>can_begin_with(const ::parseme&parseme) const;
 
+  virtual size_t hash() const override;
+};
+
+/* A wording matches any token sequence that begins in plain I7 (possibly within
+ * an extract) or documentation, ends in the same lexical state, and does not
+ * cross a sentence boundary.
+ */
+class wording : public production {
+public:
+  wording(typename ::session&session, const nonterminal&result);
+  wording(const wording&copy);
+
+protected:
+  virtual bool can_begin_sentence() const override;
+
+  virtual void justification_hook() const override;
+  virtual void unjustification_hook() const override;
+
+public:
   virtual operator bool() const override;
 
-  virtual base_class*clone() const override;
-  virtual size_t hash() const override;
+  virtual const base_class*clone() const override;
+};
+
+/* A sentence'' matches any token sequence that begins in plain I7 (possibly
+ * within an extract) or documentation, ends in the same lexical state just
+ * before a sentence boundary, and does not cross a sentence boundary.
+ * Sentences automatically absorb any sentence-ending punctuation; it is not
+ * necessary to include the possibilities as nonterminals in a sentence's
+ * productions.
+ *
+ * Ordinarily a sentence must also begin just after a sentence boundary, but
+ * this requirement is waived when matching part of a larger sentence or
+ * passage, a concession made for the sake of sentence-splitting commas.
+ */
+class sentence : public production {
+public:
+  sentence(typename ::session&session, const nonterminal&result);
+  sentence(const sentence&copy);
+
+protected:
+  virtual bool can_begin_sentence() const override;
+
+  virtual void justification_hook() const override;
+  virtual void unjustification_hook() const override;
+
+public:
+  virtual operator bool() const override;
+
+  virtual const base_class*clone() const override;
+};
+
+/* A passage matches any token sequence that begins in plain I7 (possibly within
+ * an extract) or documentation, usually just after a sentence boundary, and
+ * ends in the same lexical state just before a sentence boundary.  It is
+ * ordinarily used to agglomerate several sentences that are part of a fixed
+ * pattern, like the preamble-body form in definitions, phrases, and rules.
+ *
+ * Like sentences, passages may begin in places other than after a sentence
+ * boundary if they are part of a larger passage.  This makes the parser a
+ * little simpler to write though it's not clear that this caveat is actually
+ * useful for parsing Inform 7 code.
+ */
+class passage : public production {
+public:
+  passage(typename ::session&session, const nonterminal&result);
+  passage(const passage&copy);
+
+protected:
+  virtual bool can_begin_sentence() const override;
+
+  virtual void justification_hook() const override;
+  virtual void unjustification_hook() const override;
+
+public:
+  virtual operator bool() const override;
+
+  virtual const base_class*clone() const override;
 };
 
 class match : public annotation_fact {
@@ -216,21 +340,14 @@ protected:
   const token_iterator			inclusive_end;
 
 public:
-  match(typename ::session&session, ::buffer*buffer, const ::production&production, const unsigned slots_filled, token_iterator beginning, token_iterator inclusive_end);
-  match(typename ::session&session, ::buffer*buffer, const ::production&production, const unsigned slots_filled, token_iterator beginning);
+  match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning, token_iterator inclusive_end);
+  match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning);
+  match(const match&prefix, token_iterator inclusive_end);
+  match(const ::production&production, unsigned slots_filled, const match&addendum);
+  match(const match&prefix, const match&addendum);
   ~match();
 
 protected:
-  friend class token_available;
-  friend class next_token;
-
-  match(const match&prefix, token_iterator inclusive_end);
-  match(const ::production&production, const match&addendum);
-  match(const match&prefix, const match&addendum);
-
-  bool can_continue_with(token_iterator end) const;
-  bool can_continue_with(const match&addendum) const;
-
   virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
 
   virtual std::vector<const annotatable*>get_annotatables() const override;
@@ -239,9 +356,16 @@ protected:
   virtual std::vector<fact*>get_immediate_consequences() const override;
 
 public:
-  bool is_complete() const;
+  const nonterminal&get_result() const;
+  token_iterator get_beginning() const;
+  token_iterator get_inclusive_end() const;
 
-  virtual base_class*clone() const override;
+  bool is_complete() const;
+  bool can_continue_with(token_iterator end) const;
+  bool can_continue_with(const match&addendum) const;
+  const std::vector<const parseme*>&get_continuing_alternatives() const;
+
+  virtual const base_class*clone() const override;
   virtual size_t hash() const override;
 };
 
