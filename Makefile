@@ -8,6 +8,7 @@ SOURCES = \
     deduction \
     delimiters \
     io \
+    language \
     lexer \
     lexer_monoid \
     lexical_highlights \
