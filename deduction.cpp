@@ -2,7 +2,7 @@
 
 using namespace std;
 
-void fact::justify() {
+void fact::justify() const {
   bool change = !operator bool();
   justification_hook();
   if (change) {
@@ -13,7 +13,7 @@ void fact::justify() {
   }
 }
 
-void fact::unjustify() {
+void fact::unjustify() const {
   unjustification_hook();
   if (!operator bool()) {
     for (fact*immediate_consequence : get_immediate_consequences()) {

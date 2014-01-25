@@ -1,3 +1,4 @@
+#include <cassert>
 #include <typeinfo>
 
 #include "annotation.hpp"
@@ -14,12 +15,20 @@ bool annotatable::has_annotation(const ::annotation&annotation) const {
   return i->second.find(annotation) != i->second.end();
 }
 
+const annotation*annotatable::get_annotation(const ::annotation&annotation) const {
+  const_annotations_iterator i = annotations.find(type_index{typeid(annotation)});
+  assert(i != annotations.end());
+  const_specific_annotations_iterator j = i->second.find(annotation);
+  assert(j != i->second.end());
+  return &static_cast<const ::annotation&>(*j);
+}
+
 void annotatable::add_annotation(const ::annotation&annotation) const {
-  const_cast<annotations_type&>(annotations)[type_index{typeid(annotation)}].insert(annotation);
+  annotations[type_index{typeid(annotation)}].insert(annotation);
 }
 
 void annotatable::remove_annotation(const ::annotation&annotation) const {
-  annotations_iterator i = const_cast<annotations_type&>(annotations).find(type_index{typeid(annotation)});
+  annotations_iterator i = annotations.find(type_index{typeid(annotation)});
   if (i == annotations.end()) {
     return;
   }
@@ -27,7 +36,7 @@ void annotatable::remove_annotation(const ::annotation&annotation) const {
   if (j != i->second.end()) {
     i->second.erase(j);
     if (i->second.empty()) {
-      const_cast<annotations_type&>(annotations).erase(i);
+      annotations.erase(i);
     }
   }
 }

@@ -21,15 +21,17 @@ protected:
   static const specific_annotations_type
 					no_specific_annotations;
 
-  annotations_type			annotations;
+  // Annotation changes are considered semantically const.
+  mutable annotations_type		annotations;
 
 public:
   virtual ~annotatable() {}
 
   bool has_annotation(const ::annotation&annotation) const;
+  const annotation*get_annotation(const ::annotation&annotation) const;
   // Annotation changes are considered semantically const.
-  void add_annotation(const ::annotation&annotation) const;
-  void remove_annotation(const ::annotation&annotation) const;
+  virtual void add_annotation(const ::annotation&annotation) const;
+  virtual void remove_annotation(const ::annotation&annotation) const;
 
   const specific_annotations_type&get_annotations(std::type_index type) const;
 };

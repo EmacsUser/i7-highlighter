@@ -2,6 +2,10 @@
 
 #include "base_class.hpp"
 
+void base_class::free_as_clone() const {
+  delete this;
+}
+
 bool base_class::operator ==(const base_class&other) const {
   if (this == &other) {
     return true;

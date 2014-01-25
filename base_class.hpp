@@ -8,32 +8,30 @@ protected:
   virtual bool is_equal_to_instance_of_like_class(const base_class&other) const = 0;
 public:
   virtual ~base_class() {}
-  virtual base_class*clone() const = 0;
+  virtual const base_class*clone() const = 0;
+  virtual void free_as_clone() const;
   bool operator ==(const base_class&other) const;
   virtual size_t hash() const = 0;
 };
 
 template<typename T>class clone_wrapper {
  protected:
-  T*					value;
+  const T*				value;
 
  public:
-  clone_wrapper(const T&value) : value{dynamic_cast<T*>(value.clone())} {}
-  clone_wrapper(const clone_wrapper&copy) : value{dynamic_cast<T*>(copy.value->clone())} {}
+  clone_wrapper(const T&value) : value{dynamic_cast<const T*>(value.clone())} {}
+  clone_wrapper(const clone_wrapper&copy) : value{dynamic_cast<const T*>(copy.value->clone())} {}
   ~clone_wrapper() {
-    delete value;
+    value->free_as_clone();
   }
   clone_wrapper&operator =(const clone_wrapper&other) {
     if (this != &other) {
-      delete value;
+      value->free_as_clone();
       value = dynamic_cast<T*>(other.value->clone());
     }
     return *this;
   }
 
-  operator T&() {
-    return *value;
-  }
   operator const T&() const {
     return *value;
   }

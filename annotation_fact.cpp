@@ -41,18 +41,18 @@ void negative_annotation_fact::surreptitiously_make_false() const {
 }
 
 void fact_annotatable::unjustify_all_annotation_facts() {
-  vector<annotation_fact*>accumulator;
+  vector<const annotation_fact*>accumulator;
   for (auto&i : annotations) {
     for (const annotation_wrapper&j : i.second) {
       const annotation_fact*fact = dynamic_cast<const annotation_fact*>(&static_cast<const annotation&>(j));
       if (!fact) {
 	break;
       }
-      accumulator.push_back(dynamic_cast<annotation_fact*>(fact->clone()));
+      accumulator.push_back(dynamic_cast<const annotation_fact*>(fact->clone()));
     }
   }
-  for (annotation_fact*fact : accumulator) {
+  for (const annotation_fact*fact : accumulator) {
     fact->unjustify();
-    delete fact;
+    fact->free_as_clone();
   }
 }
