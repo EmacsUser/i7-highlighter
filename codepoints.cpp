@@ -15,6 +15,7 @@ bool is_whitespace(i7_codepoint codepoint) {
   case 0x000C:
   case 0x000D:
   case 0x0020:
+  case 0x007C: // `|', an Inform 7 paragraph break.
   case 0x0085:
   case 0x00A0:
   case 0x1680:
@@ -63,6 +64,10 @@ bool is_i7_punctuation(i7_codepoint codepoint) {
 
 bool is_i7_letter(i7_codepoint codepoint) {
   return !is_whitespace(codepoint) && !is_i7_punctuation(codepoint) && codepoint != TERMINATOR_CODEPOINT;
+}
+
+bool is_i7_digit(i7_codepoint codepoint) {
+  return ('0' <= codepoint) && (codepoint <= '9');
 }
 
 bool is_i7_lexical_delimiter_letter(i7_codepoint codepoint) {

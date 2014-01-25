@@ -6,11 +6,14 @@
 // here).  This simplifies the code a lot, but also means that you can do some
 // strange things, like make identifiers out of only combining diacritics.
 //
-// We classify codepoints into four categories: whitespace is defined exactly as
-// in the Unicode standard, I7 punctuation comprises the characters that can
-// participate in lexical delimiters other than a documentation break, and I7
-// letters are everything else save TERMINATOR_CODEPOINT, which is reserved as
-// an internal delimiter.
+// We classify codepoints into four categories: whitespace is as in the Unicode
+// standard, except that Inform's paragraph break `|' is added, I7 punctuation
+// comprises the characters that can participate in lexical delimiters other
+// than a documentation break, and I7 letters are everything else save
+// TERMINATOR_CODEPOINT, which is reserved as an internal delimiter.
+//
+// Digits form a subclass of letters, and comprise 0--9, the digits that Inform
+// understands.
 //
 // If you want to write a string literal that the compiler will treat as a
 // sequence of codepoints, use the ENCODE macro: ENCODE("string here").  There
@@ -41,6 +44,7 @@ std::string ASSUME_EIGHT_BIT(const i7_string&text);
 bool is_whitespace(i7_codepoint codepoint);
 bool is_i7_punctuation(i7_codepoint codepoint);
 bool is_i7_letter(i7_codepoint codepoint);
+bool is_i7_digit(i7_codepoint codepoint);
 bool is_i7_lexical_delimiter_letter(i7_codepoint codepoint);
 i7_codepoint i7_normalize(i7_codepoint codepoint);
 
