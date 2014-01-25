@@ -117,6 +117,10 @@ void buffer::rehighlight(const lexical_reference_points_from_edit&reference_poin
   }
 }
 
+const unordered_set<token_iterator>&buffer::get_parseme_beginnings(const parseme&terminal) {
+  return parseme_beginnings[parseme_bank.lookup(terminal)];
+}
+
 void buffer::add_terminal_beginning(token_iterator beginning) {
   parseme_beginnings.insert(&parseme_bank.acquire(token_terminal{*beginning->get_text()}), beginning);
 }
@@ -137,8 +141,38 @@ void buffer::remove_parseme_beginning(const ::parseme&parseme, token_iterator be
   parseme_bank.release(*key);
 }
 
-const unordered_set<token_iterator>&buffer::get_parseme_beginnings(const parseme&terminal) {
-  return parseme_beginnings[parseme_bank.lookup(terminal)];
+const unordered_set<token_iterator>&buffer::get_sentence_endings() const {
+  return sentence_endings;
+}
+
+void buffer::add_sentence_ending(token_iterator position) {
+  sentence_endings.insert(position);
+}
+
+void buffer::remove_sentence_ending(token_iterator position) {
+  sentence_endings.erase(position);
+}
+
+const unordered_set<const match*>&buffer::get_partial_matches_needing(const nonterminal*result) const {
+  return partial_matches_by_need[result];
+}
+
+void buffer::add_partial_match(const match*partial_match) {
+  for (const parseme*alternative : partial_match->get_continuing_alternatives()) {
+    const nonterminal*need = dynamic_cast<const nonterminal*>(alternative);
+    if (need) {
+      partial_matches_by_need.insert(need, partial_match);
+    }
+  }
+}
+
+void buffer::remove_partial_match(const match*partial_match) {
+  for (const parseme*alternative : partial_match->get_continuing_alternatives()) {
+    const nonterminal*need = dynamic_cast<const nonterminal*>(alternative);
+    if (need) {
+      partial_matches_by_need.erase(need, partial_match);
+    }
+  }
 }
 
 void buffer::remove_codepoints(unsigned beginning, unsigned end) {

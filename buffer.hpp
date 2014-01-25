@@ -11,6 +11,8 @@
 
 class session;
 class parseme;
+class nonterminal;
+class match;
 
 enum buffer_type {
   UNDECIDED_BUFFER,
@@ -29,6 +31,9 @@ protected:
   token_sequence			source_text;
   custom_multimap<const parseme*, token_iterator>
 					parseme_beginnings;
+  std::unordered_set<token_iterator>	sentence_endings;
+  custom_multimap<const nonterminal*, const match*>
+					partial_matches_by_need;
 
 public:
   buffer(typename ::session&owner, unsigned buffer_number) :
@@ -41,11 +46,19 @@ protected:
   void rehighlight(const lexical_reference_points_from_edit&reference_points_from_edit);
 
 public:
+  const std::unordered_set<token_iterator>&get_parseme_beginnings(const parseme&terminal);
   void add_terminal_beginning(token_iterator beginning);
   void remove_terminal_beginning(token_iterator beginning);
   void add_parseme_beginning(const ::parseme&parseme, token_iterator beginning);
   void remove_parseme_beginning(const ::parseme&parseme, token_iterator beginning);
-  const std::unordered_set<token_iterator>&get_parseme_beginnings(const parseme&terminal);
+
+  const std::unordered_set<token_iterator>&get_sentence_endings() const;
+  void add_sentence_ending(token_iterator position);
+  void remove_sentence_ending(token_iterator position);
+
+  const std::unordered_set<const match*>&get_partial_matches_needing(const nonterminal*result) const;
+  void add_partial_match(const match*partial_match);
+  void remove_partial_match(const match*partial_match);
 
   void remove_codepoints(unsigned beginning, unsigned end);
   void add_codepoints(unsigned beginning, const i7_string&insertion);
