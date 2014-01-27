@@ -11,6 +11,7 @@
 
 class parseme;
 class production;
+class subsentence;
 class wording;
 class sentence;
 class passage;
@@ -22,6 +23,7 @@ protected:
   using production_map = custom_multimap<const parseme*, const production*>;
   using production_set = typename production_map::value_set_type;
   buffer_map				buffers;
+  std::unordered_set<const subsentence*>subsentences;
   std::unordered_set<const wording*>	wordings;
   std::unordered_set<const sentence*>	sentences;
   std::unordered_set<const passage*>	passages;
@@ -41,14 +43,17 @@ protected:
 public:
   const buffer_map&get_buffers() const;
 
+  const std::unordered_set<const subsentence*>&get_subsentences() const;
   const std::unordered_set<const wording*>&get_wordings() const;
   const std::unordered_set<const sentence*>&get_sentences() const;
   const std::unordered_set<const passage*>&get_passages() const;
 
+  void add_subsentence(const ::subsentence&subsentence);
   void add_wording(const ::wording&wording);
   void add_sentence(const ::sentence&sentence);
   void add_passage(const ::passage&passage);
 
+  void remove_subsentence(const ::subsentence&subsentence);
   void remove_wording(const ::wording&wording);
   void remove_sentence(const ::sentence&sentence);
   void remove_passage(const ::passage&passage);

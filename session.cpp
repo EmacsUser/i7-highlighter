@@ -30,6 +30,10 @@ const session::buffer_map&session::get_buffers() const {
   return buffers;
 }
 
+const unordered_set<const subsentence*>&session::get_subsentences() const {
+  return subsentences;
+}
+
 const unordered_set<const wording*>&session::get_wordings() const {
   return wordings;
 }
@@ -40,6 +44,12 @@ const unordered_set<const sentence*>&session::get_sentences() const {
 
 const unordered_set<const passage*>&session::get_passages() const {
   return passages;
+}
+
+void session::add_subsentence(const ::subsentence&subsentence) {
+  const ::subsentence*internalization = dynamic_cast<const ::subsentence*>(add_production(subsentence));
+  assert(subsentences.find(internalization) == subsentences.end());
+  subsentences.insert(internalization);
 }
 
 void session::add_wording(const ::wording&wording) {
@@ -58,6 +68,12 @@ void session::add_passage(const ::passage&passage) {
   const ::passage*internalization = dynamic_cast<const ::passage*>(add_production(passage));
   assert(passages.find(internalization) == passages.end());
   passages.insert(internalization);
+}
+
+void session::remove_subsentence(const ::subsentence&subsentence) {
+  const ::subsentence*internalization = dynamic_cast<const ::subsentence*>(remove_production(subsentence));
+  assert(subsentences.find(internalization) != subsentences.end());
+  subsentences.erase(internalization);
 }
 
 void session::remove_wording(const ::wording&wording) {

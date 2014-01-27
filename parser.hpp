@@ -248,6 +248,25 @@ public:
   virtual size_t hash() const override;
 };
 
+// A subsentence matches any token sequence that does not cross a sentence
+// boundary.
+class subsentence : public production {
+public:
+  subsentence(typename ::session&session, const nonterminal&result);
+  subsentence(const subsentence&copy);
+
+protected:
+  virtual bool can_begin_sentence() const override;
+
+  virtual void justification_hook() const override;
+  virtual void unjustification_hook() const override;
+
+public:
+  virtual operator bool() const override;
+
+  virtual const base_class*clone() const override;
+};
+
 /* A wording matches any token sequence that begins in plain I7 (possibly within
  * an extract) or documentation, ends in the same lexical state, and does not
  * cross a sentence boundary.
@@ -272,9 +291,6 @@ public:
 /* A sentence'' matches any token sequence that begins in plain I7 (possibly
  * within an extract) or documentation, ends in the same lexical state just
  * before a sentence boundary, and does not cross a sentence boundary.
- * Sentences automatically absorb any sentence-ending punctuation; it is not
- * necessary to include the possibilities as nonterminals in a sentence's
- * productions.
  *
  * Ordinarily a sentence must also begin just after a sentence boundary, but
  * this requirement is waived when matching part of a larger sentence or
@@ -305,8 +321,8 @@ public:
  *
  * Like sentences, passages may begin in places other than after a sentence
  * boundary if they are part of a larger passage.  This makes the parser a
- * little simpler to write though it's not clear that this caveat is actually
- * useful for parsing Inform 7 code.
+ * little simpler to write, but it's not clear that this caveat is actually
+ * useful for anything.
  */
 class passage : public production {
 public:

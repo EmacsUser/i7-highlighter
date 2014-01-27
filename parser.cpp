@@ -684,6 +684,34 @@ size_t production::hash() const {
   return hash_value;
 }
 
+subsentence::subsentence(typename ::session&session, const nonterminal&result) :
+  production{session, result} {}
+
+subsentence::subsentence(const subsentence&copy) :
+  production{copy} {}
+
+bool subsentence::can_begin_sentence() const {
+  typename ::session&session = dynamic_cast<typename ::session&>(context);
+  return session.can_begin_sentence_with(this);
+}
+
+void subsentence::justification_hook() const {
+  dynamic_cast<typename ::session&>(context).add_subsentence(*this);
+}
+
+void subsentence::unjustification_hook() const {
+  dynamic_cast<typename ::session&>(context).remove_subsentence(*this);
+}
+
+subsentence::operator bool() const {
+  const unordered_set<const subsentence*>&subsentences = dynamic_cast<typename ::session&>(context).get_subsentences();
+  return subsentences.find(dynamic_cast<const subsentence*>(production_bank.lookup(*this))) != subsentences.end();
+}
+
+const base_class*subsentence::clone() const {
+  return new subsentence{*this};
+}
+
 wording::wording(typename ::session&session, const nonterminal&result) :
   production{session, result} {}
 
