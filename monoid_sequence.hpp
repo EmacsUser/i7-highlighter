@@ -492,6 +492,11 @@ public:
       return copy;
     }
 
+    iterator&move_to_end() {
+      position = nullptr;
+      return *this;
+    }
+
     size_t hash() const {
       return reinterpret_cast<size_t>(position);
     }

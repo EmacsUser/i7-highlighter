@@ -8,22 +8,20 @@
 using namespace std;
 
 static token_iterator previous_by_skipping_whitespace(token_iterator position) {
-  for(token_iterator result = position; result.can_decrement();) {
-    --result;
-    if (!result->is_only_whitespace()) {
-      return result;
+  token_iterator result = position;
+  do {
+    if (!result.can_decrement()) {
+      return result.move_to_end();
     }
-  }
-  return position;
+    --result;
+  } while (result->is_only_whitespace());
+  return result;
 }
 
 static token_iterator next_by_skipping_whitespace(token_iterator position) {
-  for(token_iterator result = position; (++result).can_increment();) {
-    if (!result->is_only_whitespace()) {
-      return result;
-    }
-  }
-  return position;
+  token_iterator result = position;
+  while ((++result).can_increment() && result->is_only_whitespace());
+  return result;
 }
 
 void buffer::parser_rehighlight_handler(token_iterator beginning, token_iterator end) {
@@ -40,11 +38,9 @@ void buffer::parser_rehighlight_handler(token_iterator beginning, token_iterator
     token_available available{owner, this, i};
     available.justify();
     if (!i->is_only_whitespace()) {
-      if (previous != beginning) {
-	::next_token next_token{owner, previous, i};
-	next_token.justify();
-	assert(::previous(i) == previous);
-      }
+      ::next_token next_token{owner, this, previous, i};
+      next_token.justify();
+      assert(::previous(i) == previous);
       previous = i;
     }
   }
@@ -52,11 +48,9 @@ void buffer::parser_rehighlight_handler(token_iterator beginning, token_iterator
     token_iterator inclusive_end = end;
     --inclusive_end;
     token_iterator next = next_by_skipping_whitespace(inclusive_end);
-    if (next != inclusive_end) {
-      ::next_token next_token{owner, previous, next};
-      next_token.justify();
-      assert(::previous(next) == previous);
-    }
+    ::next_token next_token{owner, this, previous, next};
+    next_token.justify();
+    assert(!next.can_increment() || ::previous(next) == previous);
   }
 }
 

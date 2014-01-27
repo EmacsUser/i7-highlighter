@@ -214,7 +214,7 @@ next_token::next_token(typename ::session&session, ::buffer*buffer, token_iterat
   buffer{buffer},
   self{self},
   next{next} {
-  assert(self.can_increment());
+  assert(self.can_increment() || next.can_increment());
   assert(self != next);
 }
 
@@ -223,7 +223,7 @@ next_token::next_token(typename ::session&session, token_iterator self, token_it
   buffer{nullptr},
   self{self},
   next{next} {
-  assert(self.can_increment());
+  assert(self.can_increment() || next.can_increment());
   assert(self != next);
 }
 
@@ -233,10 +233,14 @@ bool next_token::is_equal_to_instance_of_like_class(const base_class&other) cons
 }
 
 vector<const annotatable*>next_token::get_annotatables() const {
-  if (next.can_increment()) {
-    return {&*self, &*next};
+  if (self.can_increment()) {
+    if (next.can_increment()) {
+      return {&*self, &*next};
+    }
+    return {&*self};
   }
-  return {&*self};
+  assert(next.can_increment());
+  return {&*next};
 }
 
 vector<fact*>next_token::get_immediate_consequences() const {
@@ -295,11 +299,11 @@ token_iterator next_token::get_next() const {
 }
 
 const base_class*next_token::clone() const {
-  return new next_token{dynamic_cast<typename ::session&>(context), self, next};
+  return new next_token{dynamic_cast<typename ::session&>(context), buffer, self, next};
 }
 
 size_t next_token::hash() const {
-  return reinterpret_cast<size_t>(&*self);
+  return self.can_increment() ? reinterpret_cast<size_t>(&*self) : reinterpret_cast<size_t>(&*next) - 1;
 }
 
 token_iterator previous(const token_iterator&iterator) {
