@@ -372,6 +372,7 @@ void end_of_sentence::unjustification_hook() const {
 }
 
 std::vector<fact*>end_of_sentence::get_immediate_consequences() const {
+  typename ::session&session = dynamic_cast<typename ::session&>(context);
   token_iterator next = ::next(self);
   vector<fact*>results;
   if ((next != self) && next.can_increment() && token_available{session, next}) {
@@ -446,7 +447,7 @@ const base_class*name_word_terminal::clone() const {
 bool end_of_sentence_terminal::accepts(const token_iterator&iterator) const {
   // TODO: The session parameter here doesn't matter, but perhaps should still
   // be computed for readability's sake.
-  return end_of_sentence{session, iterator};
+  return end_of_sentence{*session, iterator};
 }
 
 const base_class*end_of_sentence_terminal::clone() const {
@@ -847,7 +848,7 @@ bool match::can_continue_with(token_iterator end) const {
 }
 
 bool match::can_continue_with(const match&addendum) const {
-  assert(&session == &addendum.context);
+  assert(&context == &addendum.context);
   return
     !is_complete() &&
     addendum.is_complete() &&

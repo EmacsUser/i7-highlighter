@@ -1,3 +1,4 @@
+#include "session.hpp"
 #include "io.hpp"
 
 // Placeholders
@@ -19,6 +20,7 @@ void set_cursor(unsigned view_number, unsigned beginning, unsigned end) {}
 // End placeholders
 
 int main() {
+  session = new typename ::session{};
   startup_io();
   return 0;
 }

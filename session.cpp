@@ -229,17 +229,17 @@ void session::add_codepoints(unsigned buffer_number, unsigned beginning, const i
   i->second->add_codepoints(beginning, insertion);
 }
 
-typename ::session session;
+typename ::session*session = nullptr;
 
 void discard_buffer(unsigned buffer_number) {
-  session.discard_buffer(buffer_number);
+  session->discard_buffer(buffer_number);
 }
 void introduce_buffer(unsigned buffer_number) {
-  session.introduce_buffer(buffer_number);
+  session->introduce_buffer(buffer_number);
 }
 void remove_codepoints(unsigned buffer_number, unsigned beginning, unsigned end) {
-  session.remove_codepoints(buffer_number, beginning, end);
+  session->remove_codepoints(buffer_number, beginning, end);
 }
 void add_codepoints(unsigned buffer_number, unsigned beginning, const i7_string&insertion) {
-  session.add_codepoints(buffer_number, beginning, insertion);
+  session->add_codepoints(buffer_number, beginning, insertion);
 }

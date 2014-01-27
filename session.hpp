@@ -76,6 +76,6 @@ public:
   void add_codepoints(unsigned buffer_number, unsigned beginning, const i7_string&insertion);
 };
 
-extern ::session session;
+extern ::session*session;
 
 #endif
