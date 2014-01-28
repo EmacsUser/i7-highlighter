@@ -1,6 +1,8 @@
 #ifndef DEDUCTION_HEADER
 #define DEDUCTION_HEADER
 
+#include <iostream>
+
 #include <vector>
 
 /* A context represents a setting in which facts can be evaluated as true or
@@ -45,11 +47,20 @@ protected:
    * them.
    */
   virtual std::vector<fact*>get_immediate_consequences() const = 0;
+
+  virtual std::ostream&print(std::ostream&out) const { return out; }
 public:
   fact(::context&context) : context(context) {}
   virtual ~fact() {}
   /* The bool operator determines whether a fact is true or false. */
   virtual operator bool() const = 0;
+
+  /* Decide whether the fact's class represents observations.  For the moment,
+   * this method is assumed to be implemented as either ``return false'' or
+   * ``return true'', which constrains deductions to have no multi-vertex cycles
+   * under the usual homomorphism to the fact class hierarchy. */
+  virtual bool is_observation() const { return false; }
+
   /* Except in the internals of the fact class, the justify method should only
    * be called on observations; it signals that the observation was false but
    * has become true. */
@@ -58,6 +69,8 @@ public:
    * (normally) only be called on observations; it signals that the observation
    * was true but has become false. */
   void unjustify() const;
+
+  friend std::ostream&operator <<(std::ostream&out, const ::fact&fact);
 };
 
 #endif
