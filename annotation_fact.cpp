@@ -45,7 +45,8 @@ void fact_annotatable::unjustify_all_annotation_facts() {
   for (auto&i : annotations) {
     for (const annotation_wrapper&j : i.second) {
       const annotation_fact*fact = dynamic_cast<const annotation_fact*>(&static_cast<const annotation&>(j));
-      if (!fact) {
+      if (!fact || !fact->is_observation()) {
+	// Continue the outer loop, effectively advancing to the next type.
 	break;
       }
       accumulator.push_back(dynamic_cast<const annotation_fact*>(fact->clone()));
