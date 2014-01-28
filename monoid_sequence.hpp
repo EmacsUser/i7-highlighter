@@ -449,9 +449,9 @@ public:
       return &(position->get_difference());
     }
 
-    // const monoid_sequence*get_owner() const {
-    //   return sequence;
-    // }
+    const monoid_sequence&get_owner() const {
+      return *sequence;
+    }
 
     bool can_decrement() const {
       if (position) {
