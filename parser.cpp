@@ -7,39 +7,68 @@
 
 using namespace std;
 
+static bool is_plain_i7_or_documentation(lexical_state state) {
+  if (!state.get_comment_depth()) {
+    switch (state.get_superstate()) {
+    case I7:
+    case I7_EXTENSION_DOCUMENTATION:
+    case I7_IN_EXTRACT:
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool is_in_plain_i7_or_documentation(token_iterator iterator) {
+  const token_sequence&source_text = iterator.get_owner();
+  return is_plain_i7_or_documentation(source_text.sum_over_interval(source_text.begin(), iterator).get_lexical_effect()(INITIAL_LEXICAL_STATE));
+}
+
 // With CYK filtering, the deduction rules for matches split into the following
-// cases, with the noted antecedent structures:
+// cases, with the noted antecedent structures and restrictions:
 
 // Case Ia: Beginning of a match at the beginning of a sentence with a token.
 // (sentence ending) (next) (sentence/passage --> production) (token available)
+// 0. If the new match will be complete, its end condition must be satisfied.
 
 // Case Ib: Beginning of a match at the beginning of a sentence with a match already made.
 // (sentence ending) (next) (sentence/passage --> production) (complete match)
+// 0. If the new match will be complete, its end condition must be satisfied.
 
 // Case IIa: Beginning of a continuing match with a token.
 // (end of partial match) (next) (need --> production) (token available)
+// 0. If the new match will be complete, its end condition must be satisfied.
 
 // Case IIb:  Beginning of a continuing match with a match already made.
 // (end of partial match) (next) (need --> production) (complete match)
+// 0. If the new match will be complete, its end condition must be satisfied.
 
 // Case IIIa: Continuation of a match with a token.
 // (end of partial match) (next) (token available)
+// 0. If the new match will be complete, its end condition must be satisfied.
+// 1. The new match's crossing condition must be satisfied.
 
 // Case IIIb: Continuation of a match with another match.
 // (end of partial match) (next) (complete match)
+// 0. If the new match will be complete, its end condition must be satisfied.
+// (1. The new match's crossing condition must be satisfied, but this is enforced by the nonterminal hierarchy.)
 
 // Case IIIc: Continuation of a match with an epsilon.
 // (end of partial match)
+// 0. If the new match will be complete, its end condition must be satisfied.
+
+// Both 0 and 1 are enforced by guards calling can_reach_slot_count_at(...).
 
 
 // Case Ia: Beginning of a match at the beginning of a sentence with a token.
 // Case IIa: Beginning of a continuing match with a token.
 static void begin_matches_with_token(vector<fact*>&results, typename ::session&session, const unordered_set<const production*>&productions, ::buffer*buffer, token_iterator position) {
   assert(buffer);
-  const ::token&token = *position;
   for (const ::production*production : productions) {
-    for (unsigned slot_index : production->can_begin_with(token)) {
-      results.push_back(new match{session, buffer, *production, slot_index + 1, position});
+    for (unsigned slot_index : production->can_begin_with(position)) {
+      if (production->can_reach_slot_count_at(slot_index + 1, position)) {
+	results.push_back(new match{session, buffer, *production, slot_index + 1, position});
+      }
     }
   }
 }
@@ -50,7 +79,9 @@ static void begin_matches_with_match(vector<fact*>&results, const unordered_set<
   const nonterminal&match_result = beginning_match.get_result();
   for (const ::production*production : productions) {
     for (unsigned slot_index : production->can_begin_with(match_result)) {
-      results.push_back(new match{*production, slot_index + 1, beginning_match});
+      if (production->can_reach_slot_count_at(slot_index + 1, beginning_match.get_inclusive_end())) {
+	results.push_back(new match{*production, slot_index + 1, beginning_match});
+      }
     }
   }
 }
@@ -61,7 +92,9 @@ static void begin_matches_with_match(vector<fact*>&results, const intersection<c
   const nonterminal&match_result = beginning_match.get_result();
   for (const ::production*production : productions) {
     for (unsigned slot_index : production->can_begin_with(match_result)) {
-      results.push_back(new match{*production, slot_index + 1, beginning_match});
+      if (production->can_reach_slot_count_at(slot_index + 1, beginning_match.get_inclusive_end())) {
+	results.push_back(new match{*production, slot_index + 1, beginning_match});
+      }
     }
   }
 }
@@ -74,7 +107,9 @@ static void begin_matches_with_match(vector<fact*>&results, const unordered_set<
     if (candidate_beginning.is_complete() && candidate_beginning.get_beginning() == position) {
       for (const ::production*production : productions) {
 	for (unsigned slot_index : production->can_begin_with(candidate_beginning.get_result())) {
-	  results.push_back(new match{*production, slot_index + 1, candidate_beginning});
+	  if (production->can_reach_slot_count_at(slot_index + 1, candidate_beginning.get_inclusive_end())) {
+	    results.push_back(new match{*production, slot_index + 1, candidate_beginning});
+	  }
 	}
       }
     }
@@ -96,7 +131,9 @@ static void continue_matches_with_token(vector<fact*>&results, token_iterator pr
   for (const annotation_wrapper&wrapper : previous_position->get_annotations(typeid(match))) {
     const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
     if (candidate_prefix.can_continue_with(next_position)) {
-      results.push_back(new match{candidate_prefix, next_position});
+      if (candidate_prefix.get_production().can_reach_slot_count_at(candidate_prefix.get_slots_filled() + 1, next_position)) {
+	results.push_back(new match{candidate_prefix, next_position});
+      }
     }
   }
 }
@@ -106,7 +143,9 @@ static void continue_matches_with_match(vector<fact*>&results, const match&candi
   for (const annotation_wrapper&addendum_wrapper : next_position->get_annotations(typeid(match))) {
     const match&candidate_addendum = dynamic_cast<const match&>(static_cast<const annotation&>(addendum_wrapper));
     if (candidate_addendum.is_complete() && candidate_prefix.can_continue_with(candidate_addendum)) {
-      results.push_back(new match{candidate_prefix, candidate_addendum});
+      if (candidate_prefix.get_production().can_reach_slot_count_at(candidate_prefix.get_slots_filled() + 1, candidate_addendum.get_inclusive_end())) {
+	results.push_back(new match{candidate_prefix, candidate_addendum});
+      }
     }
   }
 }
@@ -116,7 +155,9 @@ static void continue_matches_with_match(vector<fact*>&results, token_iterator pr
   for (const annotation_wrapper&beginning_wrapper : previous_position->get_annotations(typeid(match))) {
     const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(beginning_wrapper));
     if (candidate_prefix.can_continue_with(candidate_addendum)) {
-      results.push_back(new match{candidate_prefix, candidate_addendum});
+      if (candidate_prefix.get_production().can_reach_slot_count_at(candidate_prefix.get_slots_filled() + 1, candidate_addendum.get_inclusive_end())) {
+	results.push_back(new match{candidate_prefix, candidate_addendum});
+      }
     }
   }
 }
@@ -207,6 +248,10 @@ const base_class*token_available::clone() const {
 
 size_t token_available::hash() const {
   return reinterpret_cast<size_t>(&*self);
+}
+
+ostream&token_available::print(ostream&out) const {
+  return out << "available(" << *self << ")";
 }
 
 next_token::next_token(typename ::session&session, ::buffer*buffer, token_iterator self, token_iterator next) :
@@ -306,6 +351,22 @@ size_t next_token::hash() const {
   return self.can_increment() ? reinterpret_cast<size_t>(&*self) : reinterpret_cast<size_t>(&*next) - 1;
 }
 
+ostream&next_token::print(ostream&out) const {
+  out << "next(";
+  if (self.can_increment()) {
+    out << *self;
+  } else {
+    out << "<>";
+  }
+  out << ", ";
+  if (next.can_increment()) {
+    out << *next;
+  } else {
+    out << "<>";
+  }
+  return out << ")";
+}
+
 token_iterator previous(const token_iterator&iterator) {
   for (const annotation_wrapper&wrapper : iterator->get_annotations(typeid(next_token))) {
     const next_token&link = dynamic_cast<const next_token&>(static_cast<const annotation&>(wrapper));
@@ -393,7 +454,15 @@ std::vector<fact*>end_of_sentence::get_immediate_consequences() const {
 }
 
 const base_class*end_of_sentence::clone() const {
-  return new end_of_sentence{dynamic_cast<typename ::session&>(context), self};
+  return new end_of_sentence{dynamic_cast<typename ::session&>(context), buffer, self};
+}
+
+ostream&end_of_sentence::print(ostream&out) const {
+  return out << "end_of_sentence(" << *self << ")";
+}
+
+bool parseme::accepts(const token_iterator&iterator) const {
+  return false;
 }
 
 bool parseme::accepts(const parseme&other) const {
@@ -509,10 +578,6 @@ const i7_string&nonterminal::get_kind_name() const {
 
 unsigned nonterminal::get_tier() const {
   return tier;
-}
-
-bool nonterminal::accepts(const token_iterator&iterator) const {
-  return false;
 }
 
 bool nonterminal::accepts(const parseme&other) const {
@@ -652,6 +717,16 @@ const vector<const parseme*>&production::get_alternatives(unsigned slot_index) c
   return alternatives_sequence[slot_index];
 }
 
+bool production::accepts(unsigned slot_index, const ::token_iterator&iterator) const {
+  assert(slot_index < alternatives_sequence.size());
+  for (const ::parseme*alternative : alternatives_sequence[slot_index]) {
+    if (alternative->accepts(iterator)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool production::accepts(unsigned slot_index, const ::parseme&parseme) const {
   assert(slot_index < alternatives_sequence.size());
   for (const ::parseme*alternative : alternatives_sequence[slot_index]) {
@@ -662,12 +737,14 @@ bool production::accepts(unsigned slot_index, const ::parseme&parseme) const {
   return false;
 }
 
-std::vector<unsigned>production::can_begin_with(const ::token&token) const {
+std::vector<unsigned>production::can_begin_with(const ::token_iterator&iterator) const {
   std::vector<unsigned>results;
-  if (beginnings.empty()) { // for early rejection
-    return {};
+  for (const possible_beginning&beginning : beginnings) {
+    if (beginning.parseme->accepts(iterator)) {
+      results.push_back(beginning.epsilon_count);
+    }
   }
-  return can_begin_with(token_terminal{*token.get_text()});
+  return results;
 }
 
 std::vector<unsigned>production::can_begin_with(const ::parseme&parseme) const {
@@ -708,8 +785,18 @@ subsentence::operator bool() const {
   return subsentences.find(dynamic_cast<const subsentence*>(production_bank.lookup(*this))) != subsentences.end();
 }
 
+bool subsentence::can_reach_slot_count_at(unsigned slot_count, token_iterator position) const {
+  return
+    (slot_count == alternatives_sequence.size()) ||
+    (position.can_increment() && !end_of_sentence{dynamic_cast<typename ::session&>(context), position});
+}
+
 const base_class*subsentence::clone() const {
   return new subsentence{*this};
+}
+
+ostream&subsentence::print(ostream&out) const {
+  return out << "subsentence(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
 }
 
 wording::wording(typename ::session&session, const nonterminal&result) :
@@ -736,8 +823,22 @@ wording::operator bool() const {
   return wordings.find(dynamic_cast<const wording*>(production_bank.lookup(*this))) != wordings.end();
 }
 
+bool wording::can_reach_slot_count_at(unsigned slot_count, token_iterator position) const {
+  if ((slot_count == 1 || slot_count == alternatives_sequence.size()) &&
+      !is_in_plain_i7_or_documentation(position)) {
+    return false;
+  }
+  return
+    (slot_count == alternatives_sequence.size()) ||
+    (position.can_increment() && !end_of_sentence{dynamic_cast<typename ::session&>(context), position});
+}
+
 const base_class*wording::clone() const {
   return new wording{*this};
+}
+
+ostream&wording::print(ostream&out) const {
+  return out << "wording(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
 }
 
 sentence::sentence(typename ::session&session, const nonterminal&result) :
@@ -763,8 +864,22 @@ sentence::operator bool() const {
   return sentences.find(dynamic_cast<const sentence*>(production_bank.lookup(*this))) != sentences.end();
 }
 
+bool sentence::can_reach_slot_count_at(unsigned slot_count, token_iterator position) const {
+  if ((slot_count == 1 || slot_count == alternatives_sequence.size()) &&
+      !is_in_plain_i7_or_documentation(position)) {
+    return false;
+  }
+  return
+    (slot_count == alternatives_sequence.size()) !=
+    (position.can_increment() && !end_of_sentence{dynamic_cast<typename ::session&>(context), position});
+}
+
 const base_class*sentence::clone() const {
   return new sentence{*this};
+}
+
+ostream&sentence::print(ostream&out) const {
+  return out << "sentence(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
 }
 
 passage::passage(typename ::session&session, const nonterminal&result) :
@@ -790,8 +905,23 @@ passage::operator bool() const {
   return passages.find(dynamic_cast<const passage*>(production_bank.lookup(*this))) != passages.end();
 }
 
+bool passage::can_reach_slot_count_at(unsigned slot_count, token_iterator position) const {
+  if ((slot_count == 1 || slot_count == alternatives_sequence.size()) &&
+      !is_in_plain_i7_or_documentation(position)) {
+    return false;
+  }
+  if (slot_count == alternatives_sequence.size()) {
+    return !position.can_increment() || end_of_sentence{dynamic_cast<typename ::session&>(context), position};
+  }
+  return true;
+}
+
 const base_class*passage::clone() const {
   return new passage{*this};
+}
+
+ostream&passage::print(ostream&out) const {
+  return out << "passage(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
 }
 
 match::match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, const token_iterator beginning, const token_iterator inclusive_end) :
@@ -812,7 +942,7 @@ match::match(typename ::session&session, ::buffer*buffer, const ::production&pro
   beginning{beginning},
   inclusive_end{beginning} {
   assert(production);
-  assert(production.can_begin_with(*beginning).size());
+  assert(production.can_begin_with(beginning).size());
 }
 
 match::~match() {
@@ -856,6 +986,14 @@ match::match(const match&prefix, const match&addendum) :
 
 const nonterminal&match::get_result() const {
   return *(production->get_result());
+}
+
+const production&match::get_production() const {
+  return *production;
+}
+
+unsigned match::get_slots_filled() const {
+  return slots_filled;
 }
 
 token_iterator match::get_beginning() const {
@@ -940,18 +1078,18 @@ vector<fact*>match::get_immediate_consequences() const {
       // (sentence/passage --> production) handled by the intersection computed just above.
       // (complete match) is the trigger.
       begin_matches_with_match(results, candidates, *this);
-      // Case IIb:  Beginning of a continuing match with a match already made.
-      // (end of partial match) handled by the call to get_continuing_beginnings(...) below.
-      // (next) handled by the call to ::previous and the check on its return value.
-      // (need --> production) handled by the call to get_continuing_beginnings(...) below.
-      // (complete match) is the trigger.
-      begin_matches_with_match(results, session.get_continuing_beginnings(previous), *this);
-      // Case IIIb: Continuation of a match with another match.
-      // (end of partial match) handled by the call to continue_matches_with_match(...) below.
-      // (next) handled by the call to ::previous and the check on its return value.
-      // (complete match) is the trigger.
-      continue_matches_with_match(results, previous, *this);
     }
+    // Case IIb:  Beginning of a continuing match with a match already made.
+    // (end of partial match) handled by the call to get_continuing_beginnings(...) below.
+    // (next) handled by the call to ::previous and the check on its return value.
+    // (need --> production) handled by the call to get_continuing_beginnings(...) below.
+    // (complete match) is the trigger.
+    begin_matches_with_match(results, session.get_continuing_beginnings(previous), *this);
+    // Case IIIb: Continuation of a match with another match.
+    // (end of partial match) handled by the call to continue_matches_with_match(...) below.
+    // (next) handled by the call to ::previous and the check on its return value.
+    // (complete match) is the trigger.
+    continue_matches_with_match(results, previous, *this);
   } else {
     token_iterator end = ::next(inclusive_end);
     if (end.can_increment() && end != inclusive_end && token_available{session, end}) {
@@ -972,7 +1110,9 @@ vector<fact*>match::get_immediate_consequences() const {
 	// (end of partial match) is the trigger.
 	// (next) handled by the call to ::next and the check on its return value.
 	// (token available) handled by the conditional just above.
-	results.push_back(new match{*this, end});
+	if (production->can_reach_slot_count_at(slots_filled + 1, end)) {
+	  results.push_back(new match{*this, end});
+	}
       }
       // Case IIIb: Continuation of a match with another match.
       // (end of partial match) is the trigger.
@@ -984,7 +1124,9 @@ vector<fact*>match::get_immediate_consequences() const {
     if (production->accepts(slots_filled, epsilon)) {
       // Case IIIc: Continuation of a match with an epsilon.
       // (end of partial match) is the trigger.
-      results.push_back(new match{*this, inclusive_end});
+      if (production->can_reach_slot_count_at(slots_filled + 1, inclusive_end)) {
+	results.push_back(new match{*this, inclusive_end});
+      }
     }
   }
   return results;
@@ -1000,6 +1142,22 @@ const base_class*match::clone() const {
 
 size_t match::hash() const {
   return reinterpret_cast<size_t>(production) + reinterpret_cast<size_t>(&*beginning) + reinterpret_cast<size_t>(&*inclusive_end) + slots_filled;
+}
+
+ostream&match::print(ostream&out) const {
+  out << "match(" << *production << ", " << slots_filled << ", ";
+  if (beginning.can_increment()) {
+    out << *beginning;
+  } else {
+    out << "<>";
+  }
+  out << " ... ";
+  if (inclusive_end.can_increment()) {
+    out << *inclusive_end;
+  } else {
+    out << "<>";
+  }
+  return out << ")" << flush;
 }
 
 internalizer<parseme>parseme_bank;

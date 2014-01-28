@@ -1,6 +1,8 @@
 #ifndef PARSER_HEADER
 #define PARSER_HEADER
 
+#include <iostream>
+
 #include <utility>
 #include <vector>
 #include <unordered_set>
@@ -36,8 +38,11 @@ protected:
   virtual std::vector<fact*>get_immediate_consequences() const override;
 
 public:
+  virtual bool is_observation() const override { return true; }
+
   virtual const base_class*clone() const override;
   virtual size_t hash() const override;
+  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 class next_token : public annotation_fact {
@@ -61,8 +66,11 @@ public:
   token_iterator get_self() const;
   token_iterator get_next() const;
 
+  virtual bool is_observation() const override { return true; }
+
   virtual const base_class*clone() const override;
   virtual size_t hash() const override;
+  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 // These functions are saturating: they return their argument if there is no
@@ -85,6 +93,8 @@ protected:
 public:
   token_iterator get_self() const;
 
+  virtual bool is_observation() const override { return true; }
+
   virtual size_t hash() const override;
 };
 
@@ -101,11 +111,14 @@ protected:
   virtual void unjustification_hook() const override;
   virtual std::vector<fact*>get_immediate_consequences() const override;
   virtual const base_class*clone() const override;
+  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 class parseme : public base_class {
 public:
-  virtual bool accepts(const token_iterator&iterator) const = 0;
+  // This version of accepts is to be called when trying to match terminals.
+  virtual bool accepts(const token_iterator&iterator) const;
+  // This version of accepts is to be called when trying to match nonterminals.
   virtual bool accepts(const parseme&other) const;
 };
 
@@ -186,7 +199,6 @@ public:
   const i7_string&get_kind_name() const;
   unsigned get_tier() const;
 
-  virtual bool accepts(const token_iterator&iterator) const override;
   virtual bool accepts(const parseme&other) const override;
 
   virtual const base_class*clone() const override;
@@ -241,10 +253,18 @@ public:
   const std::vector<possible_beginning>&get_beginnings() const;
   const std::vector<const parseme*>&get_alternatives(unsigned slot_index) const;
 
+  // This version of accepts is to be called when trying to match terminals.
+  bool accepts(unsigned slot_index, const ::token_iterator&iterator) const;
+  // This version of accepts is to be called when trying to match nonterminals.
   bool accepts(unsigned slot_index, const ::parseme&parseme) const;
-  std::vector<unsigned>can_begin_with(const ::token&token) const;
+  // This version of can_begin_with is to be called when trying to match terminals.
+  std::vector<unsigned>can_begin_with(const ::token_iterator&iterator) const;
+  // This version of can_begin_with is to be called when trying to match nonterminals.
   std::vector<unsigned>can_begin_with(const ::parseme&parseme) const;
 
+  // For checking extra constraints like positions relative to end-of-sentence
+  // markers.
+  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const = 0;
   virtual size_t hash() const override;
 };
 
@@ -264,7 +284,9 @@ protected:
 public:
   virtual operator bool() const override;
 
+  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const override;
   virtual const base_class*clone() const override;
+  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 /* A wording matches any token sequence that begins in plain I7 (possibly within
@@ -285,7 +307,9 @@ protected:
 public:
   virtual operator bool() const override;
 
+  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const override;
   virtual const base_class*clone() const override;
+  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 /* A sentence'' matches any token sequence that begins in plain I7 (possibly
@@ -310,7 +334,9 @@ protected:
 public:
   virtual operator bool() const override;
 
+  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const override;
   virtual const base_class*clone() const override;
+  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 /* A passage matches any token sequence that begins in plain I7 (possibly within
@@ -338,7 +364,9 @@ protected:
 public:
   virtual operator bool() const override;
 
+  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const override;
   virtual const base_class*clone() const override;
+  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 class match : public annotation_fact {
@@ -373,6 +401,8 @@ protected:
 
 public:
   const nonterminal&get_result() const;
+  const ::production&get_production() const;
+  unsigned get_slots_filled() const;
   token_iterator get_beginning() const;
   token_iterator get_inclusive_end() const;
 
@@ -383,6 +413,7 @@ public:
 
   virtual const base_class*clone() const override;
   virtual size_t hash() const override;
+  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 extern internalizer<parseme>parseme_bank;

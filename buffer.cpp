@@ -7,6 +7,47 @@
 
 using namespace std;
 
+static bool is_plain_i7_or_documentation(lexical_state state) {
+  if (!state.get_comment_depth()) {
+    switch (state.get_superstate()) {
+    case I7:
+    case I7_EXTENSION_DOCUMENTATION:
+    case I7_IN_EXTRACT:
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool begins_with_a_digit(const i7_string*text) {
+  return text->size() && is_i7_digit((*text)[0]);
+}
+
+static bool ends_with_a_digit(const i7_string*text) {
+  return text->size() && is_i7_digit((*text)[text->size() - 1]);
+}
+
+static bool should_be_a_sentence_end(token_iterator position, token_iterator next) {
+  static const i7_string*FULL_STOP = &vocabulary.acquire(ENCODE("."));
+  static const i7_string*SEMICOLON = &vocabulary.acquire(ENCODE(";"));
+  static const i7_string*COLON = &vocabulary.acquire(ENCODE(":"));
+  if (next.can_increment() && (position->get_line_count() == 1) && next->get_line_count()) {
+    // Found a paragraph break.
+    return true;
+  }
+  const i7_string*text = position->get_text();
+  if (text == FULL_STOP || text == SEMICOLON || text == COLON) {
+    // Check that the sentence-ending punctuation is not an intra-KOV delimiter.
+    if (!next.can_increment() || !begins_with_a_digit(next->get_text()) || !position.can_decrement()) {
+      return true;
+    }
+    token_iterator previous = position;
+    --previous;
+    return !ends_with_a_digit(previous->get_text());
+  }
+  return false;
+}
+
 static token_iterator previous_by_skipping_whitespace(token_iterator position) {
   token_iterator result = position;
   do {
@@ -24,33 +65,71 @@ static token_iterator next_by_skipping_whitespace(token_iterator position) {
   return result;
 }
 
-void buffer::parser_rehighlight_handler(token_iterator beginning, token_iterator end) {
+void buffer::parser_rehighlight_handler(lexical_state beginning_state, token_iterator beginning, token_iterator end) {
   // Step I: Surreptitiously make negative annotation facts false.
   for (token_iterator i = beginning; i != end; ++i) {
     token_available available{owner, this, i};
     available.surreptitiously_make_false();
     assert(i->has_annotation(available));
   }
-  // Step II: Make observations true.
+  // Step II: Correct observations on the edges.
+  if (beginning.can_decrement()) {
+    token_iterator previous = beginning;
+    --previous;
+    ::end_of_sentence end_of_sentence{owner, this, previous};
+    if (should_be_a_sentence_end(previous, beginning)) {
+      if (!end_of_sentence) {
+	end_of_sentence.justify();
+      }
+    } else if (end_of_sentence) {
+      end_of_sentence.unjustify();
+    }
+  }
+  if (end.can_increment()) {
+    token_iterator next = end;
+    --next;
+    ::end_of_sentence end_of_sentence{owner, this, end};
+    if (should_be_a_sentence_end(end, next)) {
+      if (!end_of_sentence) {
+	end_of_sentence.justify();
+      }
+    } else if (end_of_sentence) {
+      end_of_sentence.unjustify();
+    }
+  }
+  // Step III: Make observations true.
+  lexical_state state = beginning_state;
   token_iterator previous = previous_by_skipping_whitespace(beginning);
   for (monoid_sequence<token>::iterator i = beginning, j = i; i != end; i = j) {
     ++j;
+    // token_available
     token_available available{owner, this, i};
     available.justify();
+    // next_token
     if (!i->is_only_whitespace()) {
       ::next_token next_token{owner, this, previous, i};
       next_token.justify();
       assert(::previous(i) == previous);
       previous = i;
     }
+    // end_of_sentence
+    if (is_plain_i7_or_documentation(state)) {
+      if (should_be_a_sentence_end(i, j)) {
+	::end_of_sentence end_of_sentence{owner, this, i};
+	end_of_sentence.justify();
+      }
+    }
+    state = i->get_lexical_effect()(state);
   }
   if (end.can_decrement() && previous != beginning) {
     token_iterator inclusive_end = end;
     --inclusive_end;
     token_iterator next = next_by_skipping_whitespace(inclusive_end);
-    ::next_token next_token{owner, this, previous, next};
-    next_token.justify();
-    assert(!next.can_increment() || ::previous(next) == previous);
+    if (previous.can_increment() || next.can_increment()) {
+      ::next_token next_token{owner, this, previous, next};
+      next_token.justify();
+      assert(!next.can_increment() || ::previous(next) == previous);
+    }
   }
 }
 
@@ -100,7 +179,7 @@ void buffer::rehighlight(const lexical_reference_points_from_edit&reference_poin
     highlight_before = highlight_after;
   }
   //
-  parser_rehighlight_handler(reference_points_from_edit.start_of_relexed_text, i);
+  parser_rehighlight_handler(reference_points_from_edit.pre_relex_state, reference_points_from_edit.start_of_relexed_text, i);
   //
   if (highlight_codepoint_index_before < codepoint_index_before) {
     new_highlights.push_back({ highlight_codepoint_index_before, codepoint_index_before, highlight_before });
