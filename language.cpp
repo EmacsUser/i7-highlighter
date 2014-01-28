@@ -18,4 +18,51 @@ using namespace std;
 #define OTHER(parseme) current.add_alternative_to_last_slot(parseme);
 #define DONE current.justify(); }
 
-session::session() {}
+session::session() {
+  // Parentheses
+  RESULT(wording, "left parenthesis", 0);
+  SLOT TERMINAL("(");
+  DONE;
+  RESULT(wording, "right parenthesis", 0);
+  SLOT TERMINAL(")");
+  DONE;
+
+  // Digits
+  RESULT(wording, "digits", 0);
+  SLOT OTHER(digits_terminal{});
+  DONE;
+
+  // Words
+  RESULT(wording, "word", 0);
+  SLOT OTHER(word_terminal{});
+  DONE;
+
+  // Name words
+  RESULT(wording, "name word", 0);
+  SLOT OTHER(name_word_terminal{});
+  DONE;
+
+  // Sentence endings
+  RESULT(wording, "end of a sentence", 0);
+  SLOT OTHER(end_of_sentence_terminal{});
+  DONE;
+
+  // Name words (internal)
+  RESULT(wording, "name words (internal)", 0);
+  SLOT NONTERMINAL("name word", 0);
+  DONE;
+  RESULT(wording, "name words (internal)", 0);
+  SLOT NONTERMINAL("name words (internal)", 0);
+  SLOT NONTERMINAL("name word", 0);
+  DONE;
+
+  // Nonterminal declarations
+  RESULT(sentence, "a nonterminal declaration", 0);
+  SLOT TERMINAL("#");
+  SLOT NONTERMINAL("name words (internal)", 0);
+  SLOT TERMINAL("is");
+  SLOT TERMINAL("a");
+  SLOT TERMINAL("wording") TERMINAL("line") TERMINAL("sentence") TERMINAL("passage");
+  SLOT OTHER(end_of_sentence_terminal{});
+  DONE;
+}
