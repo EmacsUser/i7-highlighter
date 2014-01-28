@@ -98,17 +98,17 @@ Chapter "A Word"
 
 [``A word'' is a terminal that matches a single token.]
 
-Chapter "A Name word"
+Chapter "A Name Word"
 
 [``A name word'' is a terminal that matches a single token that is not a comma,
 a double quote, or a parenthesis.]
 
 Chapter "The End of a Sentence"
 
-[``The end of a sentence'' matches a single token immediately preceding a
-sentence boundary, even if that token is not a sentence delimiter.  It is used
-internally to absorb punctuation at the end of a sentence, and hopefully this
-mechanism is good enough that other uses will not be warranted.]
+[``The end of a sentence'' matches a single token constituting a sentence
+boundary, even if that token is not a sentence delimiter.  It is used internally
+to absorb punctuation at the end of a sentence, and hopefully this mechanism is
+good enough that other uses will not be warranted.]
 
 Volume "Automatics"
 
