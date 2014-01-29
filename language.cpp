@@ -63,6 +63,7 @@ session::session() {
   SLOT TERMINAL("is");
   SLOT TERMINAL("a");
   SLOT TERMINAL("wording") TERMINAL("line") TERMINAL("sentence") TERMINAL("passage");
+  SLOT TERMINAL(".");
   SLOT OTHER(end_of_sentence_terminal{});
   DONE;
 }
