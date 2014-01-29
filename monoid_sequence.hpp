@@ -5,6 +5,11 @@
 
 #include "hashable.hpp"
 
+template<typename T>inline void predelete(T*pointer, decltype(&T::predelete) = nullptr) {
+  pointer->predelete();
+}
+inline void predelete(...) {}
+
 /*
  * A sorted sequence of monoid elements that allows fast lookups for sums over
  * intervals.  (``Fast'' here means amortized O(ln(n)^2) in the non-abelian
@@ -108,6 +113,10 @@ protected:
 	delete left;
 	delete right;
       }
+    }
+
+    void predelete() {
+      ::predelete(&difference);
     }
 
   protected:
@@ -398,7 +407,9 @@ protected:
     // return value.
     void remove(monoid_sequence&sequence) {
       assert(is_leaf());
+      ::predelete(this);
       if (parent) {
+	::predelete(parent);
 	vertex*grandparent = parent->parent;
 	vertex*sibling = (this == parent->left) ? parent->right : parent->left;
 	if (grandparent) {

@@ -41,7 +41,6 @@ token::token(const token&copy) :
   lexical_effect{copy.lexical_effect} {}
 
 token::~token() {
-  unjustify_all_annotation_facts();
   if (text) {
     vocabulary.release(*text);
   }

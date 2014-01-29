@@ -34,8 +34,15 @@ public:
 };
 
 class fact_annotatable : public annotatable {
+protected:
+  // Annotation changes are considered semantically const.
+  mutable annotations_type		justified_negative_annotation_facts;
+
 public:
-  virtual void unjustify_all_annotation_facts();
+  virtual void add_annotation(const ::annotation&annotation) const override;
+  virtual void remove_annotation(const ::annotation&annotation) const override;
+
+  virtual void predelete();
 };
 
 #endif
