@@ -127,34 +127,34 @@ static void begin_matches_with_match(vector<fact*>&results, typename ::session&s
 }
 
 // Case IIIa: Continuation of a match with a token.
-static void continue_matches_with_token(vector<fact*>&results, token_iterator previous_position, token_iterator next_position) {
+static void continue_matches_with_token(vector<fact*>&results, token_iterator previous_position, token_iterator next_position, bool assume_next_token_is_justified = false) {
   for (const annotation_wrapper&wrapper : previous_position->get_annotations(typeid(match))) {
     const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
-    if (candidate_prefix.can_continue_with(next_position)) {
+    if (candidate_prefix.can_continue_with(next_position, assume_next_token_is_justified)) {
       if (candidate_prefix.get_production().can_reach_slot_count_at(candidate_prefix.get_slots_filled() + 1, next_position)) {
-	results.push_back(new match{candidate_prefix, next_position});
+	results.push_back(new match{candidate_prefix, next_position, assume_next_token_is_justified});
       }
     }
   }
 }
 
 // Case IIIb: Continuation of a match with another match.
-static void continue_matches_with_match(vector<fact*>&results, const match&candidate_prefix, token_iterator next_position) {
+static void continue_matches_with_match(vector<fact*>&results, const match&candidate_prefix, token_iterator next_position, bool assume_next_token_is_justified = false) {
   for (const annotation_wrapper&addendum_wrapper : next_position->get_annotations(typeid(match))) {
     const match&candidate_addendum = dynamic_cast<const match&>(static_cast<const annotation&>(addendum_wrapper));
-    if (candidate_addendum.is_complete() && candidate_prefix.can_continue_with(candidate_addendum)) {
+    if (candidate_prefix.can_continue_with(candidate_addendum, assume_next_token_is_justified)) {
       if (candidate_prefix.get_production().can_reach_slot_count_at(candidate_prefix.get_slots_filled() + 1, candidate_addendum.get_inclusive_end())) {
-	results.push_back(new match{candidate_prefix, candidate_addendum});
+	results.push_back(new match{candidate_prefix, candidate_addendum, assume_next_token_is_justified});
       }
     }
   }
 }
 
 // Case IIIb: Continuation of a match with another match.
-static void continue_matches_with_match(vector<fact*>&results, token_iterator previous_position, const match&candidate_addendum) {
+static void continue_matches_with_match(vector<fact*>&results, token_iterator previous_position, const match&candidate_addendum, bool assume_next_token_is_justified = false) {
   for (const annotation_wrapper&beginning_wrapper : previous_position->get_annotations(typeid(match))) {
     const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(beginning_wrapper));
-    if (candidate_prefix.can_continue_with(candidate_addendum)) {
+    if (candidate_prefix.can_continue_with(candidate_addendum, assume_next_token_is_justified)) {
       if (candidate_prefix.get_production().can_reach_slot_count_at(candidate_prefix.get_slots_filled() + 1, candidate_addendum.get_inclusive_end())) {
 	results.push_back(new match{candidate_prefix, candidate_addendum});
       }
@@ -163,11 +163,11 @@ static void continue_matches_with_match(vector<fact*>&results, token_iterator pr
 }
 
 // Case IIIb: Continuation of a match with another match.
-static void continue_matches_with_match(vector<fact*>&results, token_iterator previous_position, token_iterator next_position) {
+static void continue_matches_with_match(vector<fact*>&results, token_iterator previous_position, token_iterator next_position, bool assume_next_token_is_justified = false) {
   for (const annotation_wrapper&prefix_wrapper : previous_position->get_annotations(typeid(match))) {
     const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(prefix_wrapper));
     if (candidate_prefix.get_inclusive_end() == previous_position) {
-      continue_matches_with_match(results, candidate_prefix, next_position);
+      continue_matches_with_match(results, candidate_prefix, next_position, assume_next_token_is_justified);
     }
   }
 }
@@ -243,7 +243,7 @@ std::vector<fact*>token_available::get_immediate_consequences() const {
 }
 
 const base_class*token_available::clone() const {
-  return new token_available{dynamic_cast<typename ::session&>(context), self};
+  return new token_available{dynamic_cast<typename ::session&>(context), buffer, self};
 }
 
 size_t token_available::hash() const {
@@ -324,12 +324,12 @@ vector<fact*>next_token::get_immediate_consequences() const {
       // (end of partial match) handled by the call to continue_matches_with_token(...) below.
       // (next) is the trigger.
       // (token available) handled by the outer conditional.
-      continue_matches_with_token(results, self, next);
+      continue_matches_with_token(results, self, next, true);
       // Case IIIb: Continuation of a match with another match.
       // (end of partial match) handled by the call to continue_matches_with_match(...) below.
       // (next) is the trigger.
       // (complete match) handled by the call to continue_matches_with_match(...) below.
-      continue_matches_with_match(results, self, next);
+      continue_matches_with_match(results, self, next, true);
     }
   }
   return results;
@@ -367,24 +367,34 @@ ostream&next_token::print(ostream&out) const {
   return out << ")";
 }
 
+// This function is saturating, and acts as the identity if the argument is the
+// end of the sequence.  This is to prevent accidental pointer chasing from the
+// end of a source text to its beginnning.
 token_iterator previous(const token_iterator&iterator) {
-  for (const annotation_wrapper&wrapper : iterator->get_annotations(typeid(next_token))) {
-    const next_token&link = dynamic_cast<const next_token&>(static_cast<const annotation&>(wrapper));
-    if (link.get_next() == iterator) {
-      return link.get_self();
+  if (iterator.can_increment()) {
+    for (const annotation_wrapper&wrapper : iterator->get_annotations(typeid(next_token))) {
+      const next_token&link = dynamic_cast<const next_token&>(static_cast<const annotation&>(wrapper));
+      if (link.get_next() == iterator) {
+	return link.get_self();
+      }
+      assert(link.get_self() == iterator);
     }
-    assert(link.get_self() == iterator);
   }
   return iterator;
 }
 
+// This function is saturating, and acts as the identity if the argument is the
+// end of the sequence.  This is to prevent accidental pointer chasing from the
+// beginnning of a source text to its end.
 token_iterator next(const token_iterator&iterator) {
-  for (const annotation_wrapper&wrapper : iterator->get_annotations(typeid(next_token))) {
-    const next_token&link = dynamic_cast<const next_token&>(static_cast<const annotation&>(wrapper));
-    if (link.get_self() == iterator) {
-      return link.get_next();
+  if (iterator.can_increment()) {
+    for (const annotation_wrapper&wrapper : iterator->get_annotations(typeid(next_token))) {
+      const next_token&link = dynamic_cast<const next_token&>(static_cast<const annotation&>(wrapper));
+      if (link.get_self() == iterator) {
+	return link.get_next();
+      }
+      assert(link.get_next() == iterator);
     }
-    assert(link.get_next() == iterator);
   }
   return iterator;
 }
@@ -949,7 +959,7 @@ match::~match() {
   production_bank.release(*production);
 }
 
-match::match(const match&prefix, token_iterator inclusive_end) :
+match::match(const match&prefix, token_iterator inclusive_end, bool assume_next_token_is_justified) :
   annotation_fact{prefix.context},
   buffer{prefix.buffer},
   production{&production_bank.acquire(*prefix.production)},
@@ -957,7 +967,7 @@ match::match(const match&prefix, token_iterator inclusive_end) :
   beginning{prefix.beginning},
   inclusive_end{inclusive_end} {
   assert(beginning != inclusive_end);
-  assert(prefix.inclusive_end == inclusive_end || next(prefix.inclusive_end) == inclusive_end);
+  assert(assume_next_token_is_justified || prefix.inclusive_end == inclusive_end || next(prefix.inclusive_end) == inclusive_end);
 }
 
 match::match(const ::production&production, unsigned slots_filled, const match&addendum) :
@@ -971,7 +981,7 @@ match::match(const ::production&production, unsigned slots_filled, const match&a
   assert(production.can_begin_with(addendum.get_result()).size());
 }
 
-match::match(const match&prefix, const match&addendum) :
+match::match(const match&prefix, const match&addendum, bool assume_next_token_is_justified) :
   annotation_fact{prefix.context},
   buffer{prefix.buffer},
   production{&production_bank.acquire(*prefix.production)},
@@ -981,7 +991,7 @@ match::match(const match&prefix, const match&addendum) :
   assert(&prefix.context == &addendum.context);
   assert(prefix.buffer == addendum.buffer);
   assert(prefix.inclusive_end != addendum.beginning);
-  assert(next(prefix.inclusive_end) == addendum.beginning);
+  assert(assume_next_token_is_justified || next(prefix.inclusive_end) == addendum.beginning);
 }
 
 const nonterminal&match::get_result() const {
@@ -1004,23 +1014,23 @@ token_iterator match::get_inclusive_end() const {
   return inclusive_end;
 }
 
-bool match::can_continue_with(token_iterator end) const {
+bool match::can_continue_with(token_iterator end, bool assume_next_token_is_justified) const {
   return
     !is_complete() &&
     end.can_increment() &&
     production->accepts(slots_filled, token_terminal{*end->get_text()}) &&
     (end != inclusive_end) &&
-    (end == next(inclusive_end));
+    (assume_next_token_is_justified || end == next(inclusive_end));
 }
 
-bool match::can_continue_with(const match&addendum) const {
+bool match::can_continue_with(const match&addendum, bool assume_next_token_is_justified) const {
   assert(&context == &addendum.context);
   return
     !is_complete() &&
     addendum.is_complete() &&
     production->accepts(slots_filled, *addendum.production->get_result()) &&
     (inclusive_end != addendum.beginning) &&
-    (next(inclusive_end) == addendum.beginning);
+    (assume_next_token_is_justified || next(inclusive_end) == addendum.beginning);
 }
 
 const vector<const parseme*>&match::get_continuing_alternatives() const {

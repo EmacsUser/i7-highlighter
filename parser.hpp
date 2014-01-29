@@ -386,9 +386,9 @@ protected:
 public:
   match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning, token_iterator inclusive_end);
   match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning);
-  match(const match&prefix, token_iterator inclusive_end);
+  match(const match&prefix, token_iterator inclusive_end, bool assume_next_token_is_justified = false);
   match(const ::production&production, unsigned slots_filled, const match&addendum);
-  match(const match&prefix, const match&addendum);
+  match(const match&prefix, const match&addendum, bool assume_next_token_is_justified = false);
   ~match();
 
 protected:
@@ -407,8 +407,8 @@ public:
   token_iterator get_inclusive_end() const;
 
   bool is_complete() const;
-  bool can_continue_with(token_iterator end) const;
-  bool can_continue_with(const match&addendum) const;
+  bool can_continue_with(token_iterator end, bool assume_next_token_is_justified = false) const;
+  bool can_continue_with(const match&addendum, bool assume_next_token_is_justified = false) const;
   const std::vector<const parseme*>&get_continuing_alternatives() const;
 
   virtual const base_class*clone() const override;
