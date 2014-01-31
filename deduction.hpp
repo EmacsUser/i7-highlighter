@@ -47,6 +47,18 @@ protected:
    * them.
    */
   virtual std::vector<fact*>get_immediate_consequences() const = 0;
+  /* A deduction's justification propagator after any sequence of justifications
+   * including a justification for that deduction; it is responsible for
+   * determining whether further justifications are warrented according to the
+   * immediate consequences.
+   */
+  void justification_propagate() const;
+  /* A deduction's unjustification propagator after any sequence of
+   * unjustifications including an unjustification for that deduction; it is
+   * responsible for determining whether further unjustifications are warrented
+   * according to the immediate consequences.
+   */
+  void unjustification_propagate() const;
 
   virtual std::ostream&print(std::ostream&out) const { return out; }
 public:
@@ -61,14 +73,14 @@ public:
    * under the usual homomorphism to the fact class hierarchy. */
   virtual bool is_observation() const { return false; }
 
-  /* Except in the internals of the fact class, the justify method should only
-   * be called on observations; it signals that the observation was false but
-   * has become true. */
-  void justify() const;
-  /* Except in the internals of the fact class, the unjustify method should
-   * (normally) only be called on observations; it signals that the observation
-   * was true but has become false. */
-  void unjustify() const;
+  /* The justify method should only be called on observations; it signals that
+   * the observation was false but has become true.  It should not normally need
+   * to be overridden */
+  virtual void justify() const;
+  /* The unjustify method should (normally) only be called on observations; it
+   * signals that the observation was true but has become false.  It should not
+   * normally need to be overridden */
+  virtual void unjustify() const;
 
   friend std::ostream&operator <<(std::ostream&out, const ::fact&fact);
 };

@@ -66,17 +66,20 @@ static token_iterator next_by_skipping_whitespace(token_iterator position) {
 }
 
 void buffer::parser_rehighlight_handler(lexical_state beginning_state, token_iterator beginning, token_iterator end) {
-  // Step I: Surreptitiously make negative annotation facts false.
+  // Step I: Make sure that negative and combined annotation facts are false.
   for (token_iterator i = beginning; i != end; ++i) {
     token_available available{owner, this, i};
     available.surreptitiously_make_false();
     assert(i->has_annotation(available));
+    end_of_sentence not_an_end{owner, this, i, false};
+    not_an_end.justify(); // Justify the negation.
+    assert(i->has_annotation(not_an_end));
   }
   // Step II: Correct observations on the edges.
   if (beginning.can_decrement()) {
     token_iterator previous = beginning;
     --previous;
-    ::end_of_sentence end_of_sentence{owner, this, previous};
+    ::end_of_sentence end_of_sentence{owner, this, previous, true};
     if (should_be_a_sentence_end(previous, beginning)) {
       if (!end_of_sentence) {
 	end_of_sentence.justify();
@@ -88,7 +91,7 @@ void buffer::parser_rehighlight_handler(lexical_state beginning_state, token_ite
   if (end.can_increment()) {
     token_iterator next = end;
     --next;
-    ::end_of_sentence end_of_sentence{owner, this, end};
+    ::end_of_sentence end_of_sentence{owner, this, end, true};
     if (should_be_a_sentence_end(end, next)) {
       if (!end_of_sentence) {
 	end_of_sentence.justify();
@@ -115,7 +118,7 @@ void buffer::parser_rehighlight_handler(lexical_state beginning_state, token_ite
     // end_of_sentence
     if (is_plain_i7_or_documentation(state)) {
       if (should_be_a_sentence_end(i, j)) {
-	::end_of_sentence end_of_sentence{owner, this, i};
+	::end_of_sentence end_of_sentence{owner, this, i, true};
 	end_of_sentence.justify();
       }
     }

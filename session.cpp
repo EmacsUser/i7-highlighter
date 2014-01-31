@@ -196,7 +196,7 @@ unordered_set<const production*>session::get_result_beginnings_relying_on(const 
     });
 }
 
-unordered_set<const production*>session::get_continuing_beginnings(const match&partial_match) const {
+unordered_set<const production*>session::get_continuing_beginnings(const potential_match&partial_match) const {
   unordered_set<const production*>result;
   for (const parseme*alternative : partial_match.get_continuing_alternatives()) {
     for (const production*root : get_productions_resulting_in(alternative)) {
@@ -208,8 +208,8 @@ unordered_set<const production*>session::get_continuing_beginnings(const match&p
 
 unordered_set<const production*>session::get_continuing_beginnings(token_iterator inclusive_end_of_matches) const {
   unordered_set<const production*>result;
-  for (const annotation_wrapper&wrapper : inclusive_end_of_matches->get_annotations(typeid(match))) {
-    const match&partial_match = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
+  for (const annotation_wrapper&wrapper : inclusive_end_of_matches->get_annotations(typeid(potential_match))) {
+    const potential_match&partial_match = dynamic_cast<const potential_match&>(static_cast<const annotation&>(wrapper));
     if (!partial_match.is_complete() && partial_match.get_inclusive_end() == inclusive_end_of_matches) {
       for (const parseme*alternative : partial_match.get_continuing_alternatives()) {
 	for (const production*root : get_productions_resulting_in(alternative)) {

@@ -6,13 +6,13 @@
 using namespace std;
 
 void annotation_fact::justification_hook() const {
-  for (const ::annotatable*annotatable : get_annotatables()) {
+  for (const fact_annotatable*annotatable : get_annotatables()) {
     annotatable->add_annotation(*this);
   }
 }
 
 void annotation_fact::unjustification_hook() const {
-  for (const ::annotatable*annotatable : get_annotatables()) {
+  for (const fact_annotatable*annotatable : get_annotatables()) {
     annotatable->remove_annotation(*this);
   }
 }
@@ -21,8 +21,17 @@ annotation_fact::operator bool() const {
   return get_annotatables().front()->has_annotation(*this);
 }
 
+void annotation_fact::justify() const {
+  for (const fact_annotatable*annotatable : get_annotatables()) {
+    if (annotatable->has_been_predeleted()) {
+      return;
+    }
+  }
+  fact::justify();
+}
+
 void negative_annotation_fact::justification_hook() const {
-  for (const ::annotatable*annotatable : get_annotatables()) {
+  for (const fact_annotatable*annotatable : get_annotatables()) {
     annotatable->remove_annotation(*this);
   }
 }
@@ -36,10 +45,41 @@ negative_annotation_fact::operator bool() const {
 }
 
 void negative_annotation_fact::surreptitiously_make_false() const {
-  for (const ::annotatable*annotatable : get_annotatables()) {
+  for (const fact_annotatable*annotatable : get_annotatables()) {
     annotatable->add_annotation(*this);
   }
 }
+
+// These two look like they might be dangerous for reentrancy reasons, but in
+// fact are safe because combined annotation facts are always observations, so
+// the only possible callers are justify() and unjustify().
+
+void combined_annotation_fact::justification_hook() const {
+  annotation_fact::justification_hook();
+  combined_annotation_fact*counterpart = const_cast<combined_annotation_fact*>(dynamic_cast<const combined_annotation_fact*>(clone()));
+  counterpart->in_the_positive_sense = !in_the_positive_sense;
+  if (*counterpart) {
+    counterpart->annotation_fact::unjustify();
+  }
+  counterpart->free_as_clone();
+}
+
+void combined_annotation_fact::unjustification_hook() const {
+  annotation_fact::unjustification_hook();
+  combined_annotation_fact*counterpart = const_cast<combined_annotation_fact*>(dynamic_cast<const combined_annotation_fact*>(clone()));
+  counterpart->in_the_positive_sense = !in_the_positive_sense;
+  if (!*counterpart) {
+    counterpart->annotation_fact::justify();
+  }
+  counterpart->free_as_clone();
+}
+
+bool combined_annotation_fact::is_in_the_positive_sense() const {
+  return in_the_positive_sense;
+}
+
+fact_annotatable::fact_annotatable() :
+  predeleted(false) {}
 
 void fact_annotatable::add_annotation(const ::annotation&annotation) const {
   annotatable::add_annotation(annotation);
@@ -67,7 +107,13 @@ void fact_annotatable::remove_annotation(const ::annotation&annotation) const {
   annotatable::remove_annotation(annotation);
 }
 
+bool fact_annotatable::has_been_predeleted() const {
+  return predeleted;
+}
+
 void fact_annotatable::predelete() {
+  assert(!predeleted);
+  predeleted = true;
   vector<const annotation_fact*>positive_accumulator;
   vector<const negative_annotation_fact*>negative_accumulator;
   for (auto&i : annotations) {

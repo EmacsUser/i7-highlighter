@@ -57,7 +57,7 @@ static bool is_in_plain_i7_or_documentation(token_iterator iterator) {
 // (end of partial match)
 // 0. If the new match will be complete, its end condition must be satisfied.
 
-// Both 0 and 1 are enforced by guards calling can_reach_slot_count_at(...).
+// Case IV: Conditions 0 and 1 are enforced by guards calling can_reach_slot_count_at(...).
 
 
 // Case Ia: Beginning of a match at the beginning of a sentence with a token.
@@ -66,35 +66,29 @@ static void begin_matches_with_token(vector<fact*>&results, typename ::session&s
   assert(buffer);
   for (const ::production*production : productions) {
     for (unsigned slot_index : production->can_begin_with(position)) {
-      if (production->can_reach_slot_count_at(slot_index + 1, position)) {
-	results.push_back(new match{session, buffer, *production, slot_index + 1, position});
-      }
+      results.push_back(new potential_match{session, buffer, *production, slot_index + 1, position});
     }
   }
 }
 
 // Case IIb:  Beginning of a continuing match with a match already made.
 static void begin_matches_with_match(vector<fact*>&results, const unordered_set<const production*>&productions, const match&beginning_match) {
-  assert(beginning_match.is_complete());
+  assert(beginning_match.is_filled());
   const nonterminal&match_result = beginning_match.get_result();
   for (const ::production*production : productions) {
     for (unsigned slot_index : production->can_begin_with(match_result)) {
-      if (production->can_reach_slot_count_at(slot_index + 1, beginning_match.get_inclusive_end())) {
-	results.push_back(new match{*production, slot_index + 1, beginning_match});
-      }
+      results.push_back(new potential_match{*production, slot_index + 1, beginning_match});
     }
   }
 }
 
 // Case Ib: Beginning of a match at the beginning of a sentence with a match already made.
 static void begin_matches_with_match(vector<fact*>&results, const intersection<const production*>&productions, const match&beginning_match) {
-  assert(beginning_match.is_complete());
+  assert(beginning_match.is_filled());
   const nonterminal&match_result = beginning_match.get_result();
   for (const ::production*production : productions) {
     for (unsigned slot_index : production->can_begin_with(match_result)) {
-      if (production->can_reach_slot_count_at(slot_index + 1, beginning_match.get_inclusive_end())) {
-	results.push_back(new match{*production, slot_index + 1, beginning_match});
-      }
+      results.push_back(new potential_match{*production, slot_index + 1, beginning_match});
     }
   }
 }
@@ -104,12 +98,10 @@ static void begin_matches_with_match(vector<fact*>&results, const intersection<c
 static void begin_matches_with_match(vector<fact*>&results, const unordered_set<const production*>&productions, token_iterator position) {
   for (const annotation_wrapper&beginning_wrapper : position->get_annotations(typeid(match))) {
     const match&candidate_beginning = dynamic_cast<const match&>(static_cast<const annotation&>(beginning_wrapper));
-    if (candidate_beginning.is_complete() && candidate_beginning.get_beginning() == position) {
+    if (candidate_beginning.is_filled() && candidate_beginning.get_beginning() == position) {
       for (const ::production*production : productions) {
 	for (unsigned slot_index : production->can_begin_with(candidate_beginning.get_result())) {
-	  if (production->can_reach_slot_count_at(slot_index + 1, candidate_beginning.get_inclusive_end())) {
-	    results.push_back(new match{*production, slot_index + 1, candidate_beginning});
-	  }
+	  results.push_back(new potential_match{*production, slot_index + 1, candidate_beginning});
 	}
       }
     }
@@ -131,9 +123,7 @@ static void continue_matches_with_token(vector<fact*>&results, token_iterator pr
   for (const annotation_wrapper&wrapper : previous_position->get_annotations(typeid(match))) {
     const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
     if (candidate_prefix.can_continue_with(next_position, assume_next_token_is_justified)) {
-      if (candidate_prefix.get_production().can_reach_slot_count_at(candidate_prefix.get_slots_filled() + 1, next_position)) {
-	results.push_back(new match{candidate_prefix, next_position, assume_next_token_is_justified});
-      }
+      results.push_back(new potential_match{candidate_prefix, next_position, assume_next_token_is_justified});
     }
   }
 }
@@ -143,9 +133,7 @@ static void continue_matches_with_match(vector<fact*>&results, const match&candi
   for (const annotation_wrapper&addendum_wrapper : next_position->get_annotations(typeid(match))) {
     const match&candidate_addendum = dynamic_cast<const match&>(static_cast<const annotation&>(addendum_wrapper));
     if (candidate_prefix.can_continue_with(candidate_addendum, assume_next_token_is_justified)) {
-      if (candidate_prefix.get_production().can_reach_slot_count_at(candidate_prefix.get_slots_filled() + 1, candidate_addendum.get_inclusive_end())) {
-	results.push_back(new match{candidate_prefix, candidate_addendum, assume_next_token_is_justified});
-      }
+      results.push_back(new potential_match{candidate_prefix, candidate_addendum, assume_next_token_is_justified});
     }
   }
 }
@@ -155,9 +143,7 @@ static void continue_matches_with_match(vector<fact*>&results, token_iterator pr
   for (const annotation_wrapper&beginning_wrapper : previous_position->get_annotations(typeid(match))) {
     const match&candidate_prefix = dynamic_cast<const match&>(static_cast<const annotation&>(beginning_wrapper));
     if (candidate_prefix.can_continue_with(candidate_addendum, assume_next_token_is_justified)) {
-      if (candidate_prefix.get_production().can_reach_slot_count_at(candidate_prefix.get_slots_filled() + 1, candidate_addendum.get_inclusive_end())) {
-	results.push_back(new match{candidate_prefix, candidate_addendum});
-      }
+      results.push_back(new potential_match{candidate_prefix, candidate_addendum});
     }
   }
 }
@@ -191,7 +177,7 @@ bool token_available::is_equal_to_instance_of_like_class(const base_class&other)
   return self == cast.self;
 }
 
-vector<const annotatable*>token_available::get_annotatables() const {
+vector<const fact_annotatable*>token_available::get_annotatables() const {
   return {&*self};
 }
 
@@ -217,7 +203,7 @@ std::vector<fact*>token_available::get_immediate_consequences() const {
   token_iterator previous = ::previous(self);
   vector<fact*>results;
   if (previous != self) {
-    if (!previous.can_increment() || end_of_sentence{session, previous}) {
+    if (!previous.can_increment() || end_of_sentence{session, previous, true}) {
       // Case Ia: Beginning of a match at the beginning of a sentence with a token.
       // (sentence ending) handled by the conditional just above.
       // (next) handled by the call to ::previous and the check on its return value.
@@ -242,16 +228,16 @@ std::vector<fact*>token_available::get_immediate_consequences() const {
   return results;
 }
 
+ostream&token_available::print(ostream&out) const {
+  return out << "available(" << *self << ")";
+}
+
 const base_class*token_available::clone() const {
   return new token_available{dynamic_cast<typename ::session&>(context), buffer, self};
 }
 
 size_t token_available::hash() const {
   return reinterpret_cast<size_t>(&*self);
-}
-
-ostream&token_available::print(ostream&out) const {
-  return out << "available(" << *self << ")";
 }
 
 next_token::next_token(typename ::session&session, ::buffer*buffer, token_iterator self, token_iterator next) :
@@ -277,7 +263,7 @@ bool next_token::is_equal_to_instance_of_like_class(const base_class&other) cons
   return (self == cast.self) && (next == cast.next);
 }
 
-vector<const annotatable*>next_token::get_annotatables() const {
+vector<const fact_annotatable*>next_token::get_annotatables() const {
   if (self.can_increment()) {
     if (next.can_increment()) {
       return {&*self, &*next};
@@ -293,7 +279,7 @@ vector<fact*>next_token::get_immediate_consequences() const {
   typename ::session&session = dynamic_cast<typename ::session&>(context);
   vector<fact*>results;
   if (next.can_increment() && token_available{session, next}) {
-    if (!self.can_increment() || end_of_sentence{session, self}) {
+    if (!self.can_increment() || end_of_sentence{session, self, true}) {
       // Case Ia: Beginning of a match at the beginning of a sentence with a token.
       // (sentence ending) handled by the conditional just above.
       // (next) is the trigger.
@@ -335,22 +321,6 @@ vector<fact*>next_token::get_immediate_consequences() const {
   return results;
 }
 
-token_iterator next_token::get_self() const {
-  return self;
-}
-
-token_iterator next_token::get_next() const {
-  return next;
-}
-
-const base_class*next_token::clone() const {
-  return new next_token{dynamic_cast<typename ::session&>(context), buffer, self, next};
-}
-
-size_t next_token::hash() const {
-  return self.can_increment() ? reinterpret_cast<size_t>(&*self) : reinterpret_cast<size_t>(&*next) - 1;
-}
-
 ostream&next_token::print(ostream&out) const {
   out << "next(";
   if (self.can_increment()) {
@@ -365,6 +335,22 @@ ostream&next_token::print(ostream&out) const {
     out << "<>";
   }
   return out << ")";
+}
+
+token_iterator next_token::get_self() const {
+  return self;
+}
+
+token_iterator next_token::get_next() const {
+  return next;
+}
+
+const base_class*next_token::clone() const {
+  return new next_token{dynamic_cast<typename ::session&>(context), buffer, self, next};
+}
+
+size_t next_token::hash() const {
+  return self.can_increment() ? reinterpret_cast<size_t>(&*self) : reinterpret_cast<size_t>(&*next) - 1;
 }
 
 // This function is saturating, and acts as the identity if the argument is the
@@ -399,18 +385,20 @@ token_iterator next(const token_iterator&iterator) {
   return iterator;
 }
 
-end_of_unit::end_of_unit(typename ::session&session, token_iterator self) :
-  annotation_fact{session},
+end_of_unit::end_of_unit(typename ::session&session, token_iterator self, bool in_the_positive_sense) :
+  combined_annotation_fact{session, in_the_positive_sense},
   self{self} {
   assert(self.can_increment());
 }
 
 bool end_of_unit::is_equal_to_instance_of_like_class(const base_class&other) const {
   const end_of_unit&cast = dynamic_cast<const end_of_unit&>(other);
-  return self == cast.self;
+  return
+    (in_the_positive_sense == cast.in_the_positive_sense) &&
+    (self == cast.self);
 }
 
-vector<const annotatable*>end_of_unit::get_annotatables() const {
+vector<const fact_annotatable*>end_of_unit::get_annotatables() const {
   return {&*self};
 }
 
@@ -422,12 +410,12 @@ size_t end_of_unit::hash() const {
   return reinterpret_cast<size_t>(&*self);
 }
 
-end_of_sentence::end_of_sentence(typename ::session&session, ::buffer*buffer, token_iterator self) :
-  end_of_unit{session, self},
+end_of_sentence::end_of_sentence(typename ::session&session, ::buffer*buffer, token_iterator self, bool in_the_positive_sense) :
+  end_of_unit{session, self, in_the_positive_sense},
   buffer{buffer} {}
 
-end_of_sentence::end_of_sentence(typename ::session&session, token_iterator self) :
-  end_of_unit{session, self},
+end_of_sentence::end_of_sentence(typename ::session&session, token_iterator self, bool in_the_positive_sense) :
+  end_of_unit{session, self, in_the_positive_sense},
   buffer{nullptr} {}
 
 void end_of_sentence::justification_hook() const {
@@ -444,31 +432,40 @@ void end_of_sentence::unjustification_hook() const {
 
 std::vector<fact*>end_of_sentence::get_immediate_consequences() const {
   typename ::session&session = dynamic_cast<typename ::session&>(context);
-  token_iterator next = ::next(self);
   vector<fact*>results;
-  if ((next != self) && next.can_increment() && token_available{session, next}) {
-    // Case Ia: Beginning of a match at the beginning of a sentence with a token.
-    // (sentence ending) is the trigger.
-    // (next) handled by the call to ::next and the check on its return value.
-    // (sentence/passage --> production) handled by the call to get_sentence_beginnings() below.
-    // (token available) handled by the conditional just above.
-    begin_matches_with_token(results, session, session.get_sentence_beginnings(), buffer, next);
-    // Case Ib: Beginning of a match at the beginning of a sentence with a match already made.
-    // (sentence ending) is the trigger.
-    // (next) handled by the call to ::next and the check on its return value.
-    // (sentence/passage --> production) handled by the call to get_sentence_beginnings() below.
-    // (complete match) handled in begin_matches_with_match(...).
-    begin_matches_with_match(results, session.get_sentence_beginnings(), next);
+  if (in_the_positive_sense) {
+    token_iterator next = ::next(self);
+    if ((next != self) && next.can_increment() && token_available{session, next}) {
+      // Case Ia: Beginning of a match at the beginning of a sentence with a token.
+      // (sentence ending) is the trigger.
+      // (next) handled by the call to ::next and the check on its return value.
+      // (sentence/passage --> production) handled by the call to get_sentence_beginnings() below.
+      // (token available) handled by the conditional just above.
+      begin_matches_with_token(results, session, session.get_sentence_beginnings(), buffer, next);
+      // Case Ib: Beginning of a match at the beginning of a sentence with a match already made.
+      // (sentence ending) is the trigger.
+      // (next) handled by the call to ::next and the check on its return value.
+      // (sentence/passage --> production) handled by the call to get_sentence_beginnings() below.
+      // (complete match) handled in begin_matches_with_match(...).
+      begin_matches_with_match(results, session.get_sentence_beginnings(), next);
+    }
+  }
+  // Case IV: Conditions 0 and 1 are enforced by guards calling can_reach_slot_count_at(...).
+  for (const annotation_wrapper&wrapper : self->get_annotations(typeid(potential_match))) {
+    const potential_match&candidate_match = dynamic_cast<const potential_match&>(static_cast<const annotation&>(wrapper));
+    if (candidate_match.get_inclusive_end() == self && candidate_match.get_production().can_reach_slot_count_at(candidate_match.get_slots_filled(), self, in_the_positive_sense)) {
+      results.push_back(new match{candidate_match});
+    }
   }
   return results;
 }
 
-const base_class*end_of_sentence::clone() const {
-  return new end_of_sentence{dynamic_cast<typename ::session&>(context), buffer, self};
+ostream&end_of_sentence::print(ostream&out) const {
+  return out << (in_the_positive_sense ? "end_of_sentence(" : "not_end_of_sentence(") << &(*self) << " = " << *self << ")";
 }
 
-ostream&end_of_sentence::print(ostream&out) const {
-  return out << "end_of_sentence(" << *self << ")";
+const base_class*end_of_sentence::clone() const {
+  return new end_of_sentence{dynamic_cast<typename ::session&>(context), buffer, self, in_the_positive_sense};
 }
 
 bool parseme::accepts(const token_iterator&iterator) const {
@@ -521,16 +518,6 @@ bool name_word_terminal::accepts(const token_iterator&iterator) const {
 
 const base_class*name_word_terminal::clone() const {
   return new name_word_terminal{};
-}
-
-bool end_of_sentence_terminal::accepts(const token_iterator&iterator) const {
-  // TODO: The session parameter here doesn't matter, but perhaps should still
-  // be computed for readability's sake.
-  return end_of_sentence{*session, iterator};
-}
-
-const base_class*end_of_sentence_terminal::clone() const {
-  return new end_of_sentence_terminal{};
 }
 
 token_terminal::token_terminal(const i7_string&text) :
@@ -603,11 +590,12 @@ size_t nonterminal::hash() const {
   return reinterpret_cast<size_t>(kind_name) + tier;
 }
 
-production::production(typename ::session&session, const nonterminal&result) :
+production::production(typename ::session&session, const nonterminal&result, bool internal) :
   fact{session},
   result{dynamic_cast<const nonterminal*>(&parseme_bank.acquire(result))},
   epsilon_prefix_length{0},
-  hash_value{0} {}
+  hash_value{0},
+  internal{internal} {}
 
 production::production(const production&copy) :
   fact{dynamic_cast<typename ::session&>(copy.context)},
@@ -615,7 +603,8 @@ production::production(const production&copy) :
   alternatives_sequence{copy.alternatives_sequence},
   epsilon_prefix_length{copy.epsilon_prefix_length},
   beginnings{copy.beginnings},
-  hash_value{copy.hash_value} {
+  hash_value{copy.hash_value},
+  internal{copy.internal} {
   for (const vector<const parseme*>&alternatives : alternatives_sequence) {
     for (const parseme*alternative : alternatives) {
       const parseme*internalization = &parseme_bank.acquire(*alternative);
@@ -767,12 +756,16 @@ std::vector<unsigned>production::can_begin_with(const ::parseme&parseme) const {
   return results;
 }
 
+bool production::can_reach_slot_count_at(unsigned slot_count, token_iterator position) const {
+  return can_reach_slot_count_at(slot_count, position, !position.can_increment() || end_of_sentence{dynamic_cast<typename ::session&>(context), position, true});
+}
+
 size_t production::hash() const {
   return hash_value;
 }
 
-subsentence::subsentence(typename ::session&session, const nonterminal&result) :
-  production{session, result} {}
+subsentence::subsentence(typename ::session&session, const nonterminal&result, bool internal) :
+  production{session, result, internal} {}
 
 subsentence::subsentence(const subsentence&copy) :
   production{copy} {}
@@ -790,27 +783,25 @@ void subsentence::unjustification_hook() const {
   dynamic_cast<typename ::session&>(context).remove_subsentence(*this);
 }
 
+ostream&subsentence::print(ostream&out) const {
+  return out << "subsentence(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
+}
+
 subsentence::operator bool() const {
   const unordered_set<const subsentence*>&subsentences = dynamic_cast<typename ::session&>(context).get_subsentences();
   return subsentences.find(dynamic_cast<const subsentence*>(production_bank.lookup(*this))) != subsentences.end();
 }
 
-bool subsentence::can_reach_slot_count_at(unsigned slot_count, token_iterator position) const {
-  return
-    (slot_count == alternatives_sequence.size()) ||
-    (position.can_increment() && !end_of_sentence{dynamic_cast<typename ::session&>(context), position});
+bool subsentence::can_reach_slot_count_at(unsigned slot_count, token_iterator position, bool assumed_end_of_sentence_state) const {
+  return (slot_count == alternatives_sequence.size()) || !assumed_end_of_sentence_state;
 }
 
 const base_class*subsentence::clone() const {
   return new subsentence{*this};
 }
 
-ostream&subsentence::print(ostream&out) const {
-  return out << "subsentence(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
-}
-
-wording::wording(typename ::session&session, const nonterminal&result) :
-  production{session, result} {}
+wording::wording(typename ::session&session, const nonterminal&result, bool internal) :
+  production{session, result, internal} {}
 
 wording::wording(const wording&copy) :
   production{copy} {}
@@ -828,31 +819,29 @@ void wording::unjustification_hook() const {
   dynamic_cast<typename ::session&>(context).remove_wording(*this);
 }
 
+ostream&wording::print(ostream&out) const {
+  return out << "wording(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
+}
+
 wording::operator bool() const {
   const unordered_set<const wording*>&wordings = dynamic_cast<typename ::session&>(context).get_wordings();
   return wordings.find(dynamic_cast<const wording*>(production_bank.lookup(*this))) != wordings.end();
 }
 
-bool wording::can_reach_slot_count_at(unsigned slot_count, token_iterator position) const {
+bool wording::can_reach_slot_count_at(unsigned slot_count, token_iterator position, bool assumed_end_of_sentence_state) const {
   if ((slot_count == 1 || slot_count == alternatives_sequence.size()) &&
       !is_in_plain_i7_or_documentation(position)) {
     return false;
   }
-  return
-    (slot_count == alternatives_sequence.size()) ||
-    (position.can_increment() && !end_of_sentence{dynamic_cast<typename ::session&>(context), position});
+  return (slot_count == alternatives_sequence.size()) || !assumed_end_of_sentence_state;
 }
 
 const base_class*wording::clone() const {
   return new wording{*this};
 }
 
-ostream&wording::print(ostream&out) const {
-  return out << "wording(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
-}
-
-sentence::sentence(typename ::session&session, const nonterminal&result) :
-  production{session, result} {}
+sentence::sentence(typename ::session&session, const nonterminal&result, bool internal) :
+  production{session, result, internal} {}
 
 sentence::sentence(const sentence&copy) :
   production{copy} {}
@@ -869,31 +858,29 @@ void sentence::unjustification_hook() const {
   dynamic_cast<typename ::session&>(context).remove_sentence(*this);
 }
 
+ostream&sentence::print(ostream&out) const {
+  return out << "sentence(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
+}
+
 sentence::operator bool() const {
   const unordered_set<const sentence*>&sentences = dynamic_cast<typename ::session&>(context).get_sentences();
   return sentences.find(dynamic_cast<const sentence*>(production_bank.lookup(*this))) != sentences.end();
 }
 
-bool sentence::can_reach_slot_count_at(unsigned slot_count, token_iterator position) const {
+bool sentence::can_reach_slot_count_at(unsigned slot_count, token_iterator position, bool assumed_end_of_sentence_state) const {
   if ((slot_count == 1 || slot_count == alternatives_sequence.size()) &&
       !is_in_plain_i7_or_documentation(position)) {
     return false;
   }
-  return
-    (slot_count == alternatives_sequence.size()) !=
-    (position.can_increment() && !end_of_sentence{dynamic_cast<typename ::session&>(context), position});
+  return (slot_count == alternatives_sequence.size()) == assumed_end_of_sentence_state;
 }
 
 const base_class*sentence::clone() const {
   return new sentence{*this};
 }
 
-ostream&sentence::print(ostream&out) const {
-  return out << "sentence(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
-}
-
-passage::passage(typename ::session&session, const nonterminal&result) :
-  production{session, result} {}
+passage::passage(typename ::session&session, const nonterminal&result, bool internal) :
+  production{session, result, internal} {}
 
 passage::passage(const passage&copy) :
   production{copy} {}
@@ -910,18 +897,22 @@ void passage::unjustification_hook() const {
   dynamic_cast<typename ::session&>(context).remove_passage(*this);
 }
 
+ostream&passage::print(ostream&out) const {
+  return out << "passage(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
+}
+
 passage::operator bool() const {
   const unordered_set<const passage*>&passages = dynamic_cast<typename ::session&>(context).get_passages();
   return passages.find(dynamic_cast<const passage*>(production_bank.lookup(*this))) != passages.end();
 }
 
-bool passage::can_reach_slot_count_at(unsigned slot_count, token_iterator position) const {
+bool passage::can_reach_slot_count_at(unsigned slot_count, token_iterator position, bool assumed_end_of_sentence_state) const {
   if ((slot_count == 1 || slot_count == alternatives_sequence.size()) &&
       !is_in_plain_i7_or_documentation(position)) {
     return false;
   }
   if (slot_count == alternatives_sequence.size()) {
-    return !position.can_increment() || end_of_sentence{dynamic_cast<typename ::session&>(context), position};
+    return assumed_end_of_sentence_state;
   }
   return true;
 }
@@ -930,11 +921,7 @@ const base_class*passage::clone() const {
   return new passage{*this};
 }
 
-ostream&passage::print(ostream&out) const {
-  return out << "passage(" << ASSUME_EIGHT_BIT(result->get_kind_name()) << "...)";
-}
-
-match::match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, const token_iterator beginning, const token_iterator inclusive_end) :
+potential_match::potential_match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, const token_iterator beginning, const token_iterator inclusive_end) :
   annotation_fact{session},
   buffer{buffer},
   production{&production_bank.acquire(production)},
@@ -944,7 +931,7 @@ match::match(typename ::session&session, ::buffer*buffer, const ::production&pro
   assert(production);
 }
 
-match::match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning) :
+potential_match::potential_match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning) :
   annotation_fact{session},
   buffer{buffer},
   production{&production_bank.acquire(production)},
@@ -955,11 +942,19 @@ match::match(typename ::session&session, ::buffer*buffer, const ::production&pro
   assert(production.can_begin_with(beginning).size());
 }
 
-match::~match() {
+potential_match::potential_match(const potential_match&copy) :
+  annotation_fact{copy.context},
+  buffer{copy.buffer},
+  production{&production_bank.acquire(*copy.production)},
+  slots_filled{copy.slots_filled},
+  beginning{copy.beginning},
+  inclusive_end{copy.inclusive_end} {}
+
+potential_match::~potential_match() {
   production_bank.release(*production);
 }
 
-match::match(const match&prefix, token_iterator inclusive_end, bool assume_next_token_is_justified) :
+potential_match::potential_match(const potential_match&prefix, token_iterator inclusive_end, bool assume_next_token_is_justified) :
   annotation_fact{prefix.context},
   buffer{prefix.buffer},
   production{&production_bank.acquire(*prefix.production)},
@@ -970,7 +965,7 @@ match::match(const match&prefix, token_iterator inclusive_end, bool assume_next_
   assert(assume_next_token_is_justified || prefix.inclusive_end == inclusive_end || next(prefix.inclusive_end) == inclusive_end);
 }
 
-match::match(const ::production&production, unsigned slots_filled, const match&addendum) :
+potential_match::potential_match(const ::production&production, unsigned slots_filled, const potential_match&addendum) :
   annotation_fact{addendum.context},
   buffer{addendum.buffer},
   production{&production_bank.acquire(production)},
@@ -981,7 +976,7 @@ match::match(const ::production&production, unsigned slots_filled, const match&a
   assert(production.can_begin_with(addendum.get_result()).size());
 }
 
-match::match(const match&prefix, const match&addendum, bool assume_next_token_is_justified) :
+potential_match::potential_match(const potential_match&prefix, const potential_match&addendum, bool assume_next_token_is_justified) :
   annotation_fact{prefix.context},
   buffer{prefix.buffer},
   production{&production_bank.acquire(*prefix.production)},
@@ -994,51 +989,8 @@ match::match(const match&prefix, const match&addendum, bool assume_next_token_is
   assert(assume_next_token_is_justified || next(prefix.inclusive_end) == addendum.beginning);
 }
 
-const nonterminal&match::get_result() const {
-  return *(production->get_result());
-}
-
-const production&match::get_production() const {
-  return *production;
-}
-
-unsigned match::get_slots_filled() const {
-  return slots_filled;
-}
-
-token_iterator match::get_beginning() const {
-  return beginning;
-}
-
-token_iterator match::get_inclusive_end() const {
-  return inclusive_end;
-}
-
-bool match::can_continue_with(token_iterator end, bool assume_next_token_is_justified) const {
-  return
-    !is_complete() &&
-    end.can_increment() &&
-    production->accepts(slots_filled, token_terminal{*end->get_text()}) &&
-    (end != inclusive_end) &&
-    (assume_next_token_is_justified || end == next(inclusive_end));
-}
-
-bool match::can_continue_with(const match&addendum, bool assume_next_token_is_justified) const {
-  assert(&context == &addendum.context);
-  return
-    !is_complete() &&
-    addendum.is_complete() &&
-    production->accepts(slots_filled, *addendum.production->get_result()) &&
-    (inclusive_end != addendum.beginning) &&
-    (assume_next_token_is_justified || next(inclusive_end) == addendum.beginning);
-}
-
-const vector<const parseme*>&match::get_continuing_alternatives() const {
-  return production->get_alternatives(slots_filled);
-}
-
-bool match::is_equal_to_instance_of_like_class(const base_class&other) const {
-  const match&cast = dynamic_cast<const match&>(other);
+bool potential_match::is_equal_to_instance_of_like_class(const base_class&other) const {
+  const potential_match&cast = dynamic_cast<const potential_match&>(other);
   return
     (slots_filled == cast.slots_filled) &&
     (beginning == cast.beginning) &&
@@ -1046,19 +998,114 @@ bool match::is_equal_to_instance_of_like_class(const base_class&other) const {
     (production == cast.production); // last because this is most expensive
 }
 
-vector<const annotatable*>match::get_annotatables() const {
+vector<const fact_annotatable*>potential_match::get_annotatables() const {
   if (beginning == inclusive_end) {
     return {&*beginning};
   }
   return {&*beginning, &*inclusive_end};
 }
 
+vector<fact*>potential_match::get_immediate_consequences() const {
+  vector<fact*>results;
+  if (production->can_reach_slot_count_at(slots_filled, inclusive_end)) {
+    // Case IV: Conditions 0 and 1 are enforced by guards calling can_reach_slot_count_at(...).
+    results.push_back(new match{*this});
+  }
+  return results;
+}
+
+ostream&potential_match::print(ostream&out) const {
+  out << "potential_match(" << *production << ", " << slots_filled << "/" << production->get_slot_count() << ", ";
+  if (beginning.can_increment()) {
+    out << *beginning;
+  } else {
+    out << "<>";
+  }
+  out << " ... ";
+  if (inclusive_end.can_increment()) {
+    out << *inclusive_end;
+  } else {
+    out << "<>";
+  }
+  return out << ")" << flush;
+}
+
+const nonterminal&potential_match::get_result() const {
+  return *(production->get_result());
+}
+
+const production&potential_match::get_production() const {
+  return *production;
+}
+
+unsigned potential_match::get_slots_filled() const {
+  return slots_filled;
+}
+
+token_iterator potential_match::get_beginning() const {
+  return beginning;
+}
+
+token_iterator potential_match::get_inclusive_end() const {
+  return inclusive_end;
+}
+
+bool potential_match::is_filled() const {
+  return slots_filled == production->get_slot_count();
+}
+
+bool potential_match::is_complete() const {
+  if (is_filled() && (*this)) {
+    for (const annotation_wrapper&wrapper : inclusive_end->get_annotations(typeid(match))) {
+      const match&candidate_completion = dynamic_cast<const match&>(static_cast<const annotation&>(wrapper));
+      if (is_equal_to_instance_of_like_class(candidate_completion)) {
+	return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool potential_match::can_continue_with(token_iterator end, bool assume_next_token_is_justified) const {
+  return
+    !is_filled() &&
+    end.can_increment() &&
+    production->accepts(slots_filled, token_terminal{*end->get_text()}) &&
+    (end != inclusive_end) &&
+    (assume_next_token_is_justified || end == next(inclusive_end));
+}
+
+bool potential_match::can_continue_with(const potential_match&addendum, bool assume_next_token_is_justified) const {
+  assert(&context == &addendum.context);
+  return
+    !is_filled() &&
+    addendum.is_complete() &&
+    production->accepts(slots_filled, *addendum.production->get_result()) &&
+    (inclusive_end != addendum.beginning) &&
+    (assume_next_token_is_justified || next(inclusive_end) == addendum.beginning);
+}
+
+const vector<const parseme*>&potential_match::get_continuing_alternatives() const {
+  return production->get_alternatives(slots_filled);
+}
+
+const base_class*potential_match::clone() const {
+  return new potential_match{*this};
+}
+
+size_t potential_match::hash() const {
+  return reinterpret_cast<size_t>(production) + reinterpret_cast<size_t>(&*beginning) + reinterpret_cast<size_t>(&*inclusive_end) + slots_filled;
+}
+
+match::match(const potential_match&copy) :
+  potential_match{copy} {}
+
 void match::justification_hook() const {
   assert(buffer);
   annotation_fact::justification_hook();
   if (!operator bool()) {
     buffer->add_parseme_beginning(*production->get_result(), beginning);
-    if (!is_complete()) {
+    if (!is_filled()) {
       buffer->add_partial_match(dynamic_cast<const match*>(beginning->get_annotation(*this)));
     }
   }
@@ -1068,7 +1115,7 @@ void match::unjustification_hook() const {
   assert(buffer);
   if (!operator bool()) {
     buffer->remove_parseme_beginning(*production->get_result(), beginning);
-    if (!is_complete()) {
+    if (!is_filled()) {
       buffer->remove_partial_match(dynamic_cast<const match*>(beginning->get_annotation(*this)));
     }
   }
@@ -1077,10 +1124,10 @@ void match::unjustification_hook() const {
 
 vector<fact*>match::get_immediate_consequences() const {
   typename ::session&session = dynamic_cast<typename ::session&>(context);
+  token_iterator previous = ::previous(beginning);
   vector<fact*>results;
-  if (is_complete()) {
-    token_iterator previous = ::previous(beginning);
-    if (previous != beginning && (!previous.can_increment() || end_of_sentence{session, previous})) {
+  if (is_filled()) {
+    if (previous != beginning && (!previous.can_increment() || end_of_sentence{session, previous, true})) {
       intersection<const ::production*>candidates{session.get_sentence_beginnings(), session.get_productions_beginning_with(&get_result())};
       // Case Ib: Beginning of a match at the beginning of a sentence with a match already made.
       // (sentence ending) handled by the conditional just above.
@@ -1089,17 +1136,19 @@ vector<fact*>match::get_immediate_consequences() const {
       // (complete match) is the trigger.
       begin_matches_with_match(results, candidates, *this);
     }
-    // Case IIb:  Beginning of a continuing match with a match already made.
-    // (end of partial match) handled by the call to get_continuing_beginnings(...) below.
-    // (next) handled by the call to ::previous and the check on its return value.
-    // (need --> production) handled by the call to get_continuing_beginnings(...) below.
-    // (complete match) is the trigger.
-    begin_matches_with_match(results, session.get_continuing_beginnings(previous), *this);
-    // Case IIIb: Continuation of a match with another match.
-    // (end of partial match) handled by the call to continue_matches_with_match(...) below.
-    // (next) handled by the call to ::previous and the check on its return value.
-    // (complete match) is the trigger.
-    continue_matches_with_match(results, previous, *this);
+    if (previous != beginning && previous.can_increment()) {
+      // Case IIb:  Beginning of a continuing match with a match already made.
+      // (end of partial match) handled by the call to get_continuing_beginnings(...) below.
+      // (next) handled by the call to ::previous and the check on its return value.
+      // (need --> production) handled by the call to get_continuing_beginnings(...) below.
+      // (complete match) is the trigger.
+      begin_matches_with_match(results, session.get_continuing_beginnings(previous), *this);
+      // Case IIIb: Continuation of a match with another match.
+      // (end of partial match) handled by the call to continue_matches_with_match(...) below.
+      // (next) handled by the call to ::previous and the check on its return value.
+      // (complete match) is the trigger.
+      continue_matches_with_match(results, previous, *this);
+    }
   } else {
     token_iterator end = ::next(inclusive_end);
     if (end.can_increment() && end != inclusive_end && token_available{session, end}) {
@@ -1120,9 +1169,7 @@ vector<fact*>match::get_immediate_consequences() const {
 	// (end of partial match) is the trigger.
 	// (next) handled by the call to ::next and the check on its return value.
 	// (token available) handled by the conditional just above.
-	if (production->can_reach_slot_count_at(slots_filled + 1, end)) {
-	  results.push_back(new match{*this, end});
-	}
+	results.push_back(new potential_match{*this, end});
       }
       // Case IIIb: Continuation of a match with another match.
       // (end of partial match) is the trigger.
@@ -1134,40 +1181,22 @@ vector<fact*>match::get_immediate_consequences() const {
     if (production->accepts(slots_filled, epsilon)) {
       // Case IIIc: Continuation of a match with an epsilon.
       // (end of partial match) is the trigger.
-      if (production->can_reach_slot_count_at(slots_filled + 1, inclusive_end)) {
-	results.push_back(new match{*this, inclusive_end});
-      }
+      results.push_back(new potential_match{*this, inclusive_end});
     }
   }
   return results;
 }
 
+ostream&match::print(ostream&out) const {
+  return potential_match::print(out << "complete_");
+}
+
 bool match::is_complete() const {
-  return slots_filled == production->get_slot_count();
+  return is_filled() && *this;
 }
 
 const base_class*match::clone() const {
-  return new match{dynamic_cast<typename ::session&>(context), buffer, *production, slots_filled, beginning, inclusive_end};
-}
-
-size_t match::hash() const {
-  return reinterpret_cast<size_t>(production) + reinterpret_cast<size_t>(&*beginning) + reinterpret_cast<size_t>(&*inclusive_end) + slots_filled;
-}
-
-ostream&match::print(ostream&out) const {
-  out << "match(" << *production << ", " << slots_filled << ", ";
-  if (beginning.can_increment()) {
-    out << *beginning;
-  } else {
-    out << "<>";
-  }
-  out << " ... ";
-  if (inclusive_end.can_increment()) {
-    out << *inclusive_end;
-  } else {
-    out << "<>";
-  }
-  return out << ")" << flush;
+  return new match{*this};
 }
 
 internalizer<parseme>parseme_bank;

@@ -11,7 +11,7 @@ using namespace std;
 #define T(text) token_terminal{ENCODE(text)}
 
 // Macros used directly in the code below.
-#define RESULT(level, kind, tier) { level current{*this, N(kind, tier)};
+#define RESULT(level, kind, tier) { level current{*this, N(kind, tier), true};
 #define SLOT current.add_slot();
 #define TERMINAL(text) current.add_alternative_to_last_slot(T(text));
 #define NONTERMINAL(kind, tier) current.add_alternative_to_last_slot(N(kind, tier));
@@ -43,8 +43,20 @@ session::session() {
   DONE;
 
   // Sentence endings
-  RESULT(wording, "end of a sentence", 0);
-  SLOT OTHER(end_of_sentence_terminal{});
+  RESULT(sentence, "end of a sentence with paragraph break (internal)", 0);
+  SLOT TERMINAL("|"); // TODO: Replace this placeholder with a working implementation.
+  DONE;
+  RESULT(sentence, "end of a sentence with full stop (internal)", 0);
+  SLOT TERMINAL(".");
+  DONE;
+  RESULT(sentence, "end of a sentence with semicolon (internal)", 0);
+  SLOT TERMINAL(";");
+  DONE;
+  RESULT(sentence, "end of a sentence with colon (internal)", 0);
+  SLOT TERMINAL(":");
+  DONE;
+  RESULT(sentence, "end of a sentence", 0);
+  SLOT NONTERMINAL("end of a sentence with paragraph break (internal)", 0) NONTERMINAL("end of a sentence with full stop (internal)", 0) NONTERMINAL("end of a sentence with semicolon (internal)", 0) NONTERMINAL("end of a sentence with colon (internal)", 0);
   DONE;
 
   // Name words (internal)
@@ -63,7 +75,6 @@ session::session() {
   SLOT TERMINAL("is");
   SLOT TERMINAL("a");
   SLOT TERMINAL("wording") TERMINAL("line") TERMINAL("sentence") TERMINAL("passage");
-  SLOT TERMINAL(".");
-  SLOT OTHER(end_of_sentence_terminal{});
+  SLOT NONTERMINAL("end of a sentence", 0);
   DONE;
 }

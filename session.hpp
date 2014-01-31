@@ -15,7 +15,7 @@ class subsentence;
 class wording;
 class sentence;
 class passage;
-class match;
+class potential_match;
 
 class session : public context {
 protected:
@@ -72,7 +72,7 @@ public:
   std::unordered_set<const production*>get_sentence_beginnings() const;
   std::unordered_set<const production*>get_sentence_beginnings_relying_on(const production&crux) const;
   std::unordered_set<const production*>get_result_beginnings_relying_on(const production&crux) const;
-  std::unordered_set<const production*>get_continuing_beginnings(const match&partial_match) const;
+  std::unordered_set<const production*>get_continuing_beginnings(const potential_match&partial_match) const;
   std::unordered_set<const production*>get_continuing_beginnings(token_iterator inclusive_end_of_matches) const;
 
   void discard_buffer(unsigned buffer_number);

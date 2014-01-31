@@ -32,17 +32,18 @@ public:
 protected:
   virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
 
-  virtual std::vector<const annotatable*>get_annotatables() const override;
+  virtual std::vector<const fact_annotatable*>get_annotatables() const override;
   virtual void justification_hook() const override;
   virtual void unjustification_hook() const override;
   virtual std::vector<fact*>get_immediate_consequences() const override;
+
+  virtual std::ostream&print(std::ostream&out) const override;
 
 public:
   virtual bool is_observation() const override { return true; }
 
   virtual const base_class*clone() const override;
   virtual size_t hash() const override;
-  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 class next_token : public annotation_fact {
@@ -58,9 +59,11 @@ public:
 protected:
   virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
 
-  virtual std::vector<const annotatable*>get_annotatables() const override;
+  virtual std::vector<const fact_annotatable*>get_annotatables() const override;
 
   virtual std::vector<fact*>get_immediate_consequences() const override;
+
+  virtual std::ostream&print(std::ostream&out) const override;
 
 public:
   token_iterator get_self() const;
@@ -70,7 +73,6 @@ public:
 
   virtual const base_class*clone() const override;
   virtual size_t hash() const override;
-  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 // These functions are saturating: they return their argument if there is no
@@ -78,22 +80,20 @@ public:
 token_iterator previous(const token_iterator&iterator);
 token_iterator next(const token_iterator&iterator);
 
-class end_of_unit : public annotation_fact {
+class end_of_unit : public combined_annotation_fact {
 protected:
   const token_iterator			self;
 
 public:
-  end_of_unit(typename ::session&session, token_iterator self);
+  end_of_unit(typename ::session&session, token_iterator self, bool in_the_positive_sense);
 
 protected:
   virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
 
-  virtual std::vector<const annotatable*>get_annotatables() const override;
+  virtual std::vector<const fact_annotatable*>get_annotatables() const override;
 
 public:
   token_iterator get_self() const;
-
-  virtual bool is_observation() const override { return true; }
 
   virtual size_t hash() const override;
 };
@@ -103,15 +103,18 @@ protected:
   ::buffer*				buffer;
 
 public:
-  end_of_sentence(typename ::session&session, ::buffer*buffer, token_iterator self);
-  end_of_sentence(typename ::session&session, token_iterator self);
+  end_of_sentence(typename ::session&session, ::buffer*buffer, token_iterator self, bool in_the_positive_sense);
+  end_of_sentence(typename ::session&session, token_iterator self, bool in_the_positive_sense);
 
 protected:
   virtual void justification_hook() const override;
   virtual void unjustification_hook() const override;
   virtual std::vector<fact*>get_immediate_consequences() const override;
-  virtual const base_class*clone() const override;
+
   virtual std::ostream&print(std::ostream&out) const override;
+
+public:
+  virtual const base_class*clone() const override;
 };
 
 class parseme : public base_class {
@@ -149,12 +152,6 @@ public:
 };
 
 class name_word_terminal : public unique_terminal<3> {
-public:
-  virtual bool accepts(const token_iterator&iterator) const override;
-  virtual const base_class*clone() const override;
-};
-
-class end_of_sentence_terminal : public unique_terminal<4> {
 public:
   virtual bool accepts(const token_iterator&iterator) const override;
   virtual const base_class*clone() const override;
@@ -232,9 +229,12 @@ protected:
   std::vector<possible_beginning>	beginnings;
   // The cached hash value.
   size_t				hash_value;
+  // Whether or not this production is internally generated, and therefore an
+  // observation.
+  const bool				internal;
 
 public:
-  production(typename ::session&session, const nonterminal&result);
+  production(typename ::session&session, const nonterminal&result, bool internal = false);
   production(const production&copy);
   virtual ~production();
 
@@ -245,6 +245,11 @@ protected:
   virtual std::vector<fact*>get_immediate_consequences() const override;
 
 public:
+  // Note that the following violates the fact contract.  It is only safe to do
+  // so because productions, and internal productions in particular, never
+  // annotate.
+  virtual bool is_observation() const { return internal; }
+
   void add_slot();
   void add_alternative_to_last_slot(const parseme&alternative);
 
@@ -264,7 +269,8 @@ public:
 
   // For checking extra constraints like positions relative to end-of-sentence
   // markers.
-  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const = 0;
+  bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const;
+  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position, bool assumed_end_of_sentence_state) const = 0;
   virtual size_t hash() const override;
 };
 
@@ -272,7 +278,7 @@ public:
 // boundary.
 class subsentence : public production {
 public:
-  subsentence(typename ::session&session, const nonterminal&result);
+  subsentence(typename ::session&session, const nonterminal&result, bool internal = false);
   subsentence(const subsentence&copy);
 
 protected:
@@ -281,12 +287,13 @@ protected:
   virtual void justification_hook() const override;
   virtual void unjustification_hook() const override;
 
+  virtual std::ostream&print(std::ostream&out) const override;
+
 public:
   virtual operator bool() const override;
 
-  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const override;
+  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position, bool assumed_end_of_sentence_state) const override;
   virtual const base_class*clone() const override;
-  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 /* A wording matches any token sequence that begins in plain I7 (possibly within
@@ -295,7 +302,7 @@ public:
  */
 class wording : public production {
 public:
-  wording(typename ::session&session, const nonterminal&result);
+  wording(typename ::session&session, const nonterminal&result, bool internal = false);
   wording(const wording&copy);
 
 protected:
@@ -304,15 +311,16 @@ protected:
   virtual void justification_hook() const override;
   virtual void unjustification_hook() const override;
 
+  virtual std::ostream&print(std::ostream&out) const override;
+
 public:
   virtual operator bool() const override;
 
-  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const override;
+  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position, bool assumed_end_of_sentence_state) const override;
   virtual const base_class*clone() const override;
-  virtual std::ostream&print(std::ostream&out) const override;
 };
 
-/* A sentence'' matches any token sequence that begins in plain I7 (possibly
+/* A sentence matches any token sequence that begins in plain I7 (possibly
  * within an extract) or documentation, ends in the same lexical state just
  * before a sentence boundary, and does not cross a sentence boundary.
  *
@@ -322,7 +330,7 @@ public:
  */
 class sentence : public production {
 public:
-  sentence(typename ::session&session, const nonterminal&result);
+  sentence(typename ::session&session, const nonterminal&result, bool internal = false);
   sentence(const sentence&copy);
 
 protected:
@@ -331,12 +339,13 @@ protected:
   virtual void justification_hook() const override;
   virtual void unjustification_hook() const override;
 
+  virtual std::ostream&print(std::ostream&out) const override;
+
 public:
   virtual operator bool() const override;
 
-  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const override;
+  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position, bool assumed_end_of_sentence_state) const override;
   virtual const base_class*clone() const override;
-  virtual std::ostream&print(std::ostream&out) const override;
 };
 
 /* A passage matches any token sequence that begins in plain I7 (possibly within
@@ -352,7 +361,7 @@ public:
  */
 class passage : public production {
 public:
-  passage(typename ::session&session, const nonterminal&result);
+  passage(typename ::session&session, const nonterminal&result, bool internal = false);
   passage(const passage&copy);
 
 protected:
@@ -361,15 +370,16 @@ protected:
   virtual void justification_hook() const override;
   virtual void unjustification_hook() const override;
 
+  virtual std::ostream&print(std::ostream&out) const override;
+
 public:
   virtual operator bool() const override;
 
-  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position) const override;
+  virtual bool can_reach_slot_count_at(unsigned slot_count, token_iterator position, bool assumed_end_of_sentence_state) const override;
   virtual const base_class*clone() const override;
-  virtual std::ostream&print(std::ostream&out) const override;
 };
 
-class match : public annotation_fact {
+class potential_match : public annotation_fact {
 protected:
   ::buffer*				buffer;
   // The production that is matched or partially matched.
@@ -379,25 +389,26 @@ protected:
   // The first token matched, inclusive.
   const token_iterator			beginning;
   // The last token matched, also inclusive, contrary to the usual convention.
-  // (This is because a match may be constructed before the link to the
-  // exclusive bound is asserted).
+  // (This is because a potential match may be constructed before the link to
+  // the exclusive bound is asserted).
   const token_iterator			inclusive_end;
 
 public:
-  match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning, token_iterator inclusive_end);
-  match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning);
-  match(const match&prefix, token_iterator inclusive_end, bool assume_next_token_is_justified = false);
-  match(const ::production&production, unsigned slots_filled, const match&addendum);
-  match(const match&prefix, const match&addendum, bool assume_next_token_is_justified = false);
-  ~match();
+  potential_match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning, token_iterator inclusive_end);
+  potential_match(typename ::session&session, ::buffer*buffer, const ::production&production, unsigned slots_filled, token_iterator beginning);
+  potential_match(const potential_match&copy);
+  potential_match(const potential_match&prefix, token_iterator inclusive_end, bool assume_next_token_is_justified = false);
+  potential_match(const ::production&production, unsigned slots_filled, const potential_match&addendum);
+  potential_match(const potential_match&prefix, const potential_match&addendum, bool assume_next_token_is_justified = false);
+  ~potential_match();
 
 protected:
   virtual bool is_equal_to_instance_of_like_class(const base_class&other) const override;
 
-  virtual std::vector<const annotatable*>get_annotatables() const override;
-  virtual void justification_hook() const override;
-  virtual void unjustification_hook() const override;
+  virtual std::vector<const fact_annotatable*>get_annotatables() const override;
   virtual std::vector<fact*>get_immediate_consequences() const override;
+
+  virtual std::ostream&print(std::ostream&out) const override;
 
 public:
   const nonterminal&get_result() const;
@@ -406,14 +417,31 @@ public:
   token_iterator get_beginning() const;
   token_iterator get_inclusive_end() const;
 
+  bool is_filled() const;
   bool is_complete() const;
   bool can_continue_with(token_iterator end, bool assume_next_token_is_justified = false) const;
-  bool can_continue_with(const match&addendum, bool assume_next_token_is_justified = false) const;
+  bool can_continue_with(const potential_match&addendum, bool assume_next_token_is_justified = false) const;
   const std::vector<const parseme*>&get_continuing_alternatives() const;
 
   virtual const base_class*clone() const override;
   virtual size_t hash() const override;
+};
+
+class match : public potential_match {
+public:
+  match(const potential_match&copy);
+
+protected:
+  virtual void justification_hook() const override;
+  virtual void unjustification_hook() const override;
+  virtual std::vector<fact*>get_immediate_consequences() const override;
+
   virtual std::ostream&print(std::ostream&out) const override;
+
+public:
+  bool is_complete() const;
+
+  virtual const base_class*clone() const override;
 };
 
 extern internalizer<parseme>parseme_bank;
