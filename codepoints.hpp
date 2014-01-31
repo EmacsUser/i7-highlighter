@@ -8,9 +8,9 @@
 //
 // We classify codepoints into four categories: whitespace is as in the Unicode
 // standard, except that Inform's paragraph break `|' is added, I7 punctuation
-// comprises the characters that can participate in lexical delimiters other
-// than a documentation break, and I7 letters are everything else save
-// TERMINATOR_CODEPOINT, which is reserved as an internal delimiter.
+// comprises the characters that can participate in lexical or sentence
+// delimiters other than a documentation break, and I7 letters are everything
+// else save TERMINATOR_CODEPOINT, which is reserved as an internal delimiter.
 //
 // Digits form a subclass of letters, and comprise 0--9, the digits that Inform
 // understands.

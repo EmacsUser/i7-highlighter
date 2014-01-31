@@ -52,7 +52,9 @@ bool is_i7_punctuation(i7_codepoint codepoint) {
   case 0x002A:
   case 0x002B:
   case 0x002D:
+  case 0x002E:
   case 0x003A:
+  case 0x003B:
   case 0x005B:
   case 0x005C:
   case 0x005D:
