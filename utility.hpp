@@ -10,8 +10,8 @@ protected:
 
 public:
   intersection(const std::unordered_set<T>&left, const std::unordered_set<T>&right) :
-    smaller{(left.size() < right.size()) ? left : right},
-    larger{(left.size() < right.size()) ? right : left} {}
+    smaller((left.size() < right.size()) ? left : right),
+    larger((left.size() < right.size()) ? right : left) {}
 
   class iterator {
   protected:
