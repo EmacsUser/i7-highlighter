@@ -15,7 +15,7 @@ any of the first four, when in unquoted, uncommented, unnested I7, to constitute
 a sentence boundary; sentence-dividing commas are handled separately, as
 described in the chapter "A Sentence".
 
-Boundaries are not normally used directly in the parser rules, but implicitly by
+Boundaries cannot be used directly in the parser rules, only implicitly by
 judiciously choosing appropriate kinds for nonterminals.  See the following
 book.]
 
@@ -100,15 +100,9 @@ Chapter "A Word"
 
 Chapter "A Name Word"
 
-[``A name word'' is a terminal that matches a single token that is not a comma,
-a double quote, or a parenthesis.]
-
-Chapter "The End of a Sentence"
-
-[``The end of a sentence'' matches a single token constituting a sentence
-boundary, even if that token is not a sentence delimiter.  It is used internally
-to absorb punctuation at the end of a sentence, and hopefully this mechanism is
-good enough that other uses will not be warranted.]
+[``A name word'' is a terminal that matches a single token that does not contain
+a comma, a double quote, or a parenthesis, those characters being forbidden in
+I7 names.]
 
 Volume "Automatics"
 
