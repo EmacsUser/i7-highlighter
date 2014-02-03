@@ -100,8 +100,21 @@ void buffer::parser_rehighlight_handler(lexical_state beginning_state, token_ite
       end_of_sentence.unjustify();
     }
   }
-  // Step III: Make observations true.
+  // Step IIIa: Make end-of-sentence observations true.  (We do these first for performance reasons.)
   lexical_state state = beginning_state;
+  for (monoid_sequence<token>::iterator i = beginning, j = i; i != end; i = j) {
+    ++j;
+    // end_of_sentence
+    if (is_plain_i7_or_documentation(state)) {
+      if (should_be_a_sentence_end(i, j)) {
+	::end_of_sentence end_of_sentence{owner, this, i, true};
+	end_of_sentence.justify();
+      }
+    }
+    state = i->get_lexical_effect()(state);
+  }
+  // Step IIIb: Make other observations true.
+  state = beginning_state;
   token_iterator previous = previous_by_skipping_whitespace(beginning);
   for (monoid_sequence<token>::iterator i = beginning, j = i; i != end; i = j) {
     ++j;
@@ -114,13 +127,6 @@ void buffer::parser_rehighlight_handler(lexical_state beginning_state, token_ite
       next_token.justify();
       assert(::previous(i) == previous);
       previous = i;
-    }
-    // end_of_sentence
-    if (is_plain_i7_or_documentation(state)) {
-      if (should_be_a_sentence_end(i, j)) {
-	::end_of_sentence end_of_sentence{owner, this, i, true};
-	end_of_sentence.justify();
-      }
     }
     state = i->get_lexical_effect()(state);
   }
