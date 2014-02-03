@@ -835,7 +835,7 @@ bool wording::can_reach_slot_count_at(unsigned slot_count, token_iterator positi
       !is_in_plain_i7_or_documentation(position)) {
     return false;
   }
-  return (slot_count == alternatives_sequence.size()) || !assumed_end_of_sentence_state;
+  return !assumed_end_of_sentence_state;
 }
 
 const base_class*wording::clone() const {
