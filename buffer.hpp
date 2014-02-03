@@ -1,6 +1,7 @@
 #ifndef BUFFER_HEADER
 #define BUFFER_HEADER
 
+#include <iostream>
 #include <unordered_set>
 
 #include "codepoints.hpp"
@@ -62,6 +63,8 @@ public:
 
   void remove_codepoints(unsigned beginning, unsigned end);
   void add_codepoints(unsigned beginning, const i7_string&insertion);
+
+  friend std::ostream&operator <<(std::ostream&out, const ::buffer&buffer);
 };
 
 #endif

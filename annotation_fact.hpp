@@ -1,6 +1,7 @@
 #ifndef ANNOTATION_FACT_HEADER
 #define ANNOTATION_FACT_HEADER
 
+#include <iostream>
 #include <vector>
 
 #include "annotation.hpp"
@@ -68,6 +69,8 @@ public:
 
   bool has_been_predeleted() const;
   virtual void predelete();
+
+  virtual std::ostream&dump(std::ostream&out) const;
 };
 
 #endif

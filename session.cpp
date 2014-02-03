@@ -259,3 +259,11 @@ void remove_codepoints(unsigned buffer_number, unsigned beginning, unsigned end)
 void add_codepoints(unsigned buffer_number, unsigned beginning, const i7_string&insertion) {
   session->add_codepoints(buffer_number, beginning, insertion);
 }
+
+ostream&operator <<(ostream&out, const typename ::session&session) {
+  out << "BEGIN Session" << endl;
+  for (const auto&buffer_mapping : session.buffers) {
+    out << *buffer_mapping.second;
+  }
+  return out << "END Session" << endl;
+}

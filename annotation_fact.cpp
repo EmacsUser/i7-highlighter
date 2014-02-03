@@ -142,3 +142,15 @@ void fact_annotatable::predelete() {
     fact->free_as_clone();
   }
 }
+
+ostream&fact_annotatable::dump(ostream&out) const {
+  for (auto&i : annotations) {
+    for (const annotation_wrapper&j : i.second) {
+      const annotation_fact*fact = dynamic_cast<const annotation_fact*>(&static_cast<const annotation&>(j));
+      if (fact) {
+	out << " " << *fact << endl;
+      }
+    }
+  }
+  return out;
+}

@@ -1,6 +1,7 @@
 #ifndef SESSION_HEADER
 #define SESSION_HEADER
 
+#include <iostream>
 #include <functional>
 #include <unordered_set>
 #include <unordered_map>
@@ -79,6 +80,8 @@ public:
   void introduce_buffer(unsigned buffer_number);
   void remove_codepoints(unsigned buffer_number, unsigned beginning, unsigned end);
   void add_codepoints(unsigned buffer_number, unsigned beginning, const i7_string&insertion);
+
+  friend std::ostream&operator <<(std::ostream&out, const ::session&session);
 };
 
 extern ::session*session;

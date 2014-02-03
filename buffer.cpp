@@ -258,3 +258,12 @@ void buffer::remove_codepoints(unsigned beginning, unsigned end) {
 void buffer::add_codepoints(unsigned beginning, const i7_string&insertion) {
   rehighlight(::add_codepoints(source_text, beginning, insertion));
 }
+
+ostream&operator <<(ostream&out, const ::buffer&buffer) {
+  out << "BEGIN Buffer " << buffer.buffer_number << endl;
+  for (auto i = buffer.source_text.begin(), end = buffer.source_text.end(); i != end; ++i) {
+    out << "Annotations on " << *i << ":" << endl;
+    i->dump(out);
+  }
+  return out << "END Buffer " << buffer.buffer_number << endl;
+}
