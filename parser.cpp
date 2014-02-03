@@ -1079,7 +1079,7 @@ bool potential_match::can_continue_with(const potential_match&addendum, bool ass
   assert(&context == &addendum.context);
   return
     !is_filled() &&
-    addendum.is_complete() &&
+    addendum.is_filled() &&
     production->accepts(slots_filled, *addendum.production->get_result()) &&
     (inclusive_end != addendum.beginning) &&
     (assume_next_token_is_justified || next(inclusive_end) == addendum.beginning);
