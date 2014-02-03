@@ -453,7 +453,9 @@ std::vector<fact*>end_of_sentence::get_immediate_consequences() const {
   // Case IV: Conditions 0 and 1 are enforced by guards calling can_reach_slot_count_at(...).
   for (const annotation_wrapper&wrapper : self->get_annotations(typeid(potential_match))) {
     const potential_match&candidate_match = dynamic_cast<const potential_match&>(static_cast<const annotation&>(wrapper));
-    if (candidate_match.get_inclusive_end() == self && candidate_match.get_production().can_reach_slot_count_at(candidate_match.get_slots_filled(), self, in_the_positive_sense)) {
+    const ::production&production = candidate_match.get_production();
+    unsigned slots_filled = candidate_match.get_slots_filled();
+    if (candidate_match.get_inclusive_end() == self && production.can_reach_slot_count_at(slots_filled, self, in_the_positive_sense) && !production.can_reach_slot_count_at(slots_filled, self, !in_the_positive_sense)) {
       results.push_back(new match{candidate_match});
     }
   }
