@@ -84,7 +84,7 @@ void lexer::undecided(i7_codepoint codepoint) {
   case '!':
     ACCUMULATE_AND_FLUSH(false, bang, 0);
   }
-  if (is_whitespace(codepoint)) {
+  if (is_i7_whitespace(codepoint)) {
     ACCUMULATE_TO_STATE(in_whitespace);
   }
   if (is_i7_punctuation(codepoint)) {
@@ -112,7 +112,7 @@ void lexer::after_two_single_quotes(i7_codepoint codepoint) {
 }
 
 void lexer::in_whitespace(i7_codepoint codepoint) {
-  if (is_whitespace(codepoint) && codepoint != '\r' && codepoint != '\n') {
+  if (is_i7_whitespace(codepoint) && codepoint != '\r' && codepoint != '\n') {
     ACCUMULATE();
   }
   FLUSH_AND_ACCUMULATE(true, plain_text, 0);

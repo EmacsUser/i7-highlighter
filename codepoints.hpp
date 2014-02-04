@@ -41,7 +41,7 @@ static const i7_codepoint TERMINATOR_CODEPOINT = 0xFFFF;
 #define ENCODE(string_literal) U ## string_literal
 std::string ASSUME_EIGHT_BIT(const i7_string&text);
 
-bool is_whitespace(i7_codepoint codepoint);
+bool is_i7_whitespace(i7_codepoint codepoint);
 bool is_i7_punctuation(i7_codepoint codepoint);
 bool is_i7_letter(i7_codepoint codepoint);
 bool is_i7_digit(i7_codepoint codepoint);

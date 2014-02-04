@@ -7,7 +7,7 @@ string ASSUME_EIGHT_BIT(const i7_string&text) {
 }
 
 // See Unicode 6.0, Chapter 4.6.
-bool is_whitespace(i7_codepoint codepoint) {
+bool is_i7_whitespace(i7_codepoint codepoint) {
   switch (codepoint) {
   case 0x0009:
   case 0x000A:
@@ -65,7 +65,7 @@ bool is_i7_punctuation(i7_codepoint codepoint) {
 }
 
 bool is_i7_letter(i7_codepoint codepoint) {
-  return !is_whitespace(codepoint) && !is_i7_punctuation(codepoint) && codepoint != TERMINATOR_CODEPOINT;
+  return !is_i7_whitespace(codepoint) && !is_i7_punctuation(codepoint) && codepoint != TERMINATOR_CODEPOINT;
 }
 
 bool is_i7_digit(i7_codepoint codepoint) {
