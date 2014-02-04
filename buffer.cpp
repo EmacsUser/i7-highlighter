@@ -116,6 +116,7 @@ void buffer::parser_rehighlight_handler(lexical_state beginning_state, token_ite
   // Step IIIb: Make other observations true.
   state = beginning_state;
   token_iterator previous = previous_by_skipping_whitespace(beginning);
+  bool previous_valid = (previous != beginning);
   for (monoid_sequence<token>::iterator i = beginning, j = i; i != end; i = j) {
     ++j;
     // token_available
@@ -127,10 +128,11 @@ void buffer::parser_rehighlight_handler(lexical_state beginning_state, token_ite
       next_token.justify();
       assert(::previous(i) == previous);
       previous = i;
+      previous_valid = true;
     }
     state = i->get_lexical_effect()(state);
   }
-  if (end.can_decrement() && previous != beginning) {
+  if (end.can_decrement() && previous_valid) {
     token_iterator inclusive_end = end;
     --inclusive_end;
     token_iterator next = next_by_skipping_whitespace(inclusive_end);
