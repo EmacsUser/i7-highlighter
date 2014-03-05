@@ -195,10 +195,10 @@ lexical_reference_points_from_edit remove_codepoints(token_sequence&source_text,
   if (beginning_codepoint_index == end_codepoint_index) {
     return no_reference_points_from_edit(source_text);
   }
-  token_iterator beginning_removal_point = source_text.find({beginning_codepoint_index});
+  token_iterator beginning_removal_point = source_text.find(token{beginning_codepoint_index});
   assert(beginning_removal_point != source_text.end());
   unsigned beginning_removal_offset = beginning_codepoint_index - source_text.sum_over_interval(source_text.begin(), beginning_removal_point).get_codepoint_count();
-  token_iterator end_removal_point = source_text.find({end_codepoint_index});
+  token_iterator end_removal_point = source_text.find(token{end_codepoint_index});
   unsigned end_removal_offset = end_codepoint_index - source_text.sum_over_interval(source_text.begin(), end_removal_point).get_codepoint_count();
   i7_string remaining_text = beginning_removal_point->get_text()->substr(0, beginning_removal_offset);
   if (end_removal_point != source_text.end()) {
@@ -221,7 +221,7 @@ lexical_reference_points_from_edit add_codepoints(token_sequence&source_text, un
   if (!insertion.size()) {
     return no_reference_points_from_edit(source_text);
   }
-  token_iterator insertion_point = source_text.find({beginning_codepoint_index});
+  token_iterator insertion_point = source_text.find(token{beginning_codepoint_index});
   unsigned insertion_offset = beginning_codepoint_index - source_text.sum_over_interval(source_text.begin(), insertion_point).get_codepoint_count();
   assert(insertion_point != source_text.end() || !insertion_offset);
   token prior_sum = source_text.sum_over_interval(source_text.begin(), insertion_point);
