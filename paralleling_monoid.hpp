@@ -6,9 +6,9 @@
 #include "monoid_sequence.hpp"
 
 /* A paralleling monoid for T is (monoid_sequence<T>::iterator with a fresh
- * zero, max, zero).  It is useful as a factor monoid when we elements in one
- * monoid sequence to appear in the same order as corresponding elements in
- * another.
+ * zero, max, the fresh zero).  It is useful as a factor monoid when we want
+ * elements in one monoid sequence to appear in the same order as corresponding
+ * elements in another.
  */
 template<typename T>class paralleling_monoid {
 protected:
@@ -39,8 +39,8 @@ public:
     if (iterator) {
       delete iterator;
     }
-    iterator = other.iterator ?
-      new iterator_type{*other.iterator} : nullptr;
+    iterator = other.iterator ? new iterator_type{*other.iterator} : nullptr;
+    return *this;
   }
 
   operator iterator_type() {
@@ -65,7 +65,7 @@ public:
   bool operator <(const paralleling_monoid&other) const {
     if (other.iterator) {
       if (iterator) {
-	return *iterator < other.iterator;
+	return *iterator < *other.iterator;
       }
       return true;
     }
